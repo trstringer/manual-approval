@@ -1,0 +1,12 @@
+name: Manual Workflow Approval
+description: Pause a workflow and get user approval to continue
+inputs:
+  approvers:
+    description: Required approvers
+    required: true
+  secret:
+    description: Secret
+    required: true
+runs:
+  using: docker
+  image: docker://ghcr.io/trstringer/manual-approval:1.0.0
