@@ -12,8 +12,13 @@ The way this action works is the following:
 
 1. Workflow comes to the `manual-approval` action.
 1. `manual-approval` will create an issue in the containing repository and assign it to the `approvers`.
-1. If and once all approvers respond with "Approved", the workflow will continue.
-1. If any of the approvers responds with "Denied", then the workflow will exit with a failed status.
+1. If and once all approvers respond with an approved keyword, the workflow will continue.
+1. If any of the approvers responds with a denied keyword, then the workflow will exit with a failed status.
+
+* Approval keywords - "approve", "approved", "lgtm", "yes"
+* Denied keywords - "deny", "denied", "no"
+
+These are case insensitive with optional punctuation either a period or an exclamation mark.
 
 In all cases, `manual-approval` will close the initial GitHub issue.
 
