@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/google/go-github/v43/github"
@@ -47,8 +48,12 @@ URL: %s
 
 Required approvers: %s
 
-Respond '%s' to continue workflow or '%s' to cancel.
-	`, a.runURL(), a.approvers, approvalStatusApproved, approvalStatusDenied)
+Respond '%s' to continue workflow or '%s' to cancel.`,
+		a.runURL(),
+		a.approvers,
+		formatAcceptedWords(approvedWords),
+		formatAcceptedWords(deniedWords),
+	)
 	var err error
 	a.approvalIssue, _, err = a.client.Issues.Create(ctx, a.repoOwner, a.repo, &github.IssueRequest{
 		Title:     &issueTitle,
@@ -59,7 +64,7 @@ Respond '%s' to continue workflow or '%s' to cancel.
 	return err
 }
 
-func approvalFromComments(comments []*github.IssueComment, approvers []string) approvalStatus {
+func approvalFromComments(comments []*github.IssueComment, approvers []string) (approvalStatus, error) {
 	remainingApprovers := make([]string, len(approvers))
 	copy(remainingApprovers, approvers)
 
@@ -71,19 +76,29 @@ func approvalFromComments(comments []*github.IssueComment, approvers []string) a
 		}
 
 		commentBody := comment.GetBody()
-		if commentBody == string(approvalStatusApproved) {
+		isApprovalComment, err := isApproved(commentBody)
+		if err != nil {
+			return approvalStatusPending, err
+		}
+		if isApprovalComment {
 			if len(remainingApprovers) == 1 {
-				return approvalStatusApproved
+				return approvalStatusApproved, nil
 			}
 			remainingApprovers[approverIdx] = remainingApprovers[len(remainingApprovers)-1]
 			remainingApprovers = remainingApprovers[:len(remainingApprovers)-1]
 			continue
-		} else if commentBody == string(approvalStatusDenied) {
-			return approvalStatusDenied
+		}
+
+		isDenialComment, err := isDenied(commentBody)
+		if err != nil {
+			return approvalStatusPending, err
+		}
+		if isDenialComment {
+			return approvalStatusDenied, nil
 		}
 	}
 
-	return approvalStatusPending
+	return approvalStatusPending, nil
 }
 
 func approversIndex(approvers []string, name string) int {
@@ -93,4 +108,42 @@ func approversIndex(approvers []string, name string) int {
 		}
 	}
 	return -1
+}
+
+func isApproved(commentBody string) (bool, error) {
+	for _, approvedWord := range approvedWords {
+		matched, err := regexp.MatchString(fmt.Sprintf("(?i)^%s[.!]?$", approvedWord), commentBody)
+		if err != nil {
+			return false, err
+		}
+		if matched {
+			return true, nil
+		}
+	}
+
+	return false, nil
+}
+
+func isDenied(commentBody string) (bool, error) {
+	for _, deniedWord := range deniedWords {
+		matched, err := regexp.MatchString(fmt.Sprintf("(?i)^%s[.!]?$", deniedWord), commentBody)
+		if err != nil {
+			return false, err
+		}
+		if matched {
+			return true, nil
+		}
+	}
+
+	return false, nil
+}
+
+func formatAcceptedWords(words []string) string {
+	var quotedWords []string
+
+	for _, word := range words {
+		quotedWords = append(quotedWords, fmt.Sprintf("\"%s\"", word))
+	}
+
+	return strings.Join(quotedWords, ",")
 }

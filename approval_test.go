@@ -116,9 +116,150 @@ func TestApprovalFromComments(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			actual := approvalFromComments(testCase.comments, testCase.approvers)
+			actual, err := approvalFromComments(testCase.comments, testCase.approvers)
+			if err != nil {
+				t.Fatalf("error getting approval from comments: %v", err)
+			}
+
 			if actual != testCase.expectedStatus {
 				t.Fatalf("actual %s, expected %s", actual, testCase.expectedStatus)
+			}
+		})
+	}
+}
+
+func TestApprovedCommentBody(t *testing.T) {
+	testCases := []struct {
+		name        string
+		commentBody string
+		isSuccess   bool
+	}{
+		{
+			name:        "approved_lowercase_no_punctuation",
+			commentBody: "approved",
+			isSuccess:   true,
+		},
+		{
+			name:        "approve_lowercase_no_punctuation",
+			commentBody: "approve",
+			isSuccess:   true,
+		},
+		{
+			name:        "lgtm_lowercase_no_punctuation",
+			commentBody: "lgtm",
+			isSuccess:   true,
+		},
+		{
+			name:        "yes_lowercase_no_punctuation",
+			commentBody: "yes",
+			isSuccess:   true,
+		},
+		{
+			name:        "approve_uppercase_no_punctuation",
+			commentBody: "APPROVE",
+			isSuccess:   true,
+		},
+		{
+			name:        "approved_titlecase_period",
+			commentBody: "Approved.",
+			isSuccess:   true,
+		},
+		{
+			name:        "approved_titlecase_exclamation",
+			commentBody: "Approved!",
+			isSuccess:   true,
+		},
+		{
+			name:        "approved_titlecase_question",
+			commentBody: "Approved?",
+			isSuccess:   false,
+		},
+		{
+			name:        "sentence_with_keyword",
+			commentBody: "should i approve this",
+			isSuccess:   false,
+		},
+		{
+			name:        "sentence_without_keyword",
+			commentBody: "this is just some random comment",
+			isSuccess:   false,
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			actual, err := isApproved(testCase.commentBody)
+			if err != nil {
+				t.Fatalf("error getting approval: %v", err)
+			}
+			if actual != testCase.isSuccess {
+				t.Fatalf("expected %v but got %v", testCase.isSuccess, actual)
+			}
+		})
+	}
+}
+
+func TestDeniedCommentBody(t *testing.T) {
+	testCases := []struct {
+		name        string
+		commentBody string
+		isSuccess   bool
+	}{
+		{
+			name:        "denied_lowercase_no_punctuation",
+			commentBody: "denied",
+			isSuccess:   true,
+		},
+		{
+			name:        "deny_lowercase_no_punctuation",
+			commentBody: "deny",
+			isSuccess:   true,
+		},
+		{
+			name:        "no_lowercase_no_punctuation",
+			commentBody: "no",
+			isSuccess:   true,
+		},
+		{
+			name:        "deny_uppercase_no_punctuation",
+			commentBody: "DENY",
+			isSuccess:   true,
+		},
+		{
+			name:        "denied_titlecase_period",
+			commentBody: "Denied.",
+			isSuccess:   true,
+		},
+		{
+			name:        "denied_titlecase_exclamation",
+			commentBody: "Denied!",
+			isSuccess:   true,
+		},
+		{
+			name:        "deny_titlecase_question",
+			commentBody: "Deny?",
+			isSuccess:   false,
+		},
+		{
+			name:        "sentence_with_keyword",
+			commentBody: "should i deny this",
+			isSuccess:   false,
+		},
+		{
+			name:        "sentence_without_keyword",
+			commentBody: "this is just some random comment",
+			isSuccess:   false,
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			actual, err := isDenied(testCase.commentBody)
+			if err != nil {
+				t.Fatalf("error getting approval: %v", err)
+			}
+			if actual != testCase.isSuccess {
+				t.Fatalf("expected %v but got %v", testCase.isSuccess, actual)
 			}
 		})
 	}

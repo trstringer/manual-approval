@@ -11,3 +11,8 @@ const (
 	envVarToken        string = "INPUT_SECRET"
 	envVarApprovers    string = "INPUT_APPROVERS"
 )
+
+var (
+	approvedWords = []string{"approved", "approve", "lgtm", "yes"}
+	deniedWords   = []string{"denied", "deny", "no"}
+)

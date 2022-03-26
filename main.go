@@ -57,7 +57,11 @@ commentLoop:
 			os.Exit(1)
 		}
 
-		approved := approvalFromComments(comments, approvers)
+		approved, err := approvalFromComments(comments, approvers)
+		if err != nil {
+			fmt.Printf("error getting approval from comments: %v\n", err)
+			os.Exit(1)
+		}
 		fmt.Printf("Workflow status: %s\n", approved)
 		switch approved {
 		case approvalStatusApproved:
