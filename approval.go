@@ -48,7 +48,7 @@ URL: %s
 
 Required approvers: %s
 
-Respond '%s' to continue workflow or '%s' to cancel.`,
+Respond %s to continue workflow or %s to cancel.`,
 		a.runURL(),
 		a.approvers,
 		formatAcceptedWords(approvedWords),
@@ -145,5 +145,5 @@ func formatAcceptedWords(words []string) string {
 		quotedWords = append(quotedWords, fmt.Sprintf("\"%s\"", word))
 	}
 
-	return strings.Join(quotedWords, ",")
+	return strings.Join(quotedWords, ", ")
 }
