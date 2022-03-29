@@ -7,7 +7,7 @@ inputs:
   secret:
     description: Secret
     required: true
-  minimum_approvals:
+  minimum-approvals:
     description: Minimum number of approvals to progress workflow
     required: false
 runs:

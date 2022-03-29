@@ -30,8 +30,8 @@ steps:
     with:
       secret: ${{ github.TOKEN }}
       approvers: user1,user2
-      minimum_approvals: 1
+      minimum-approvals: 1
 ```
 
 - `approvers` is a comma-delimited list of all required approvers.
-- `minimum_approvals` is an integer that sets the minimum number of approvals required to progress the workflow. Defaults to ALL approvers.
+- `minimum-approvals` is an integer that sets the minimum number of approvals required to progress the workflow. Defaults to ALL approvers.
