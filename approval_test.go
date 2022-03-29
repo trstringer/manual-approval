@@ -146,6 +146,18 @@ func TestApprovalFromComments(t *testing.T) {
 			expectedStatus:   approvalStatusApproved,
 			minimumApprovals: 2,
 		},
+		{
+			name: "multi_approver_approvals_less_than_minimum",
+			comments: []*github.IssueComment{
+				{
+					User: &github.User{Login: &login1},
+					Body: &bodyApproved,
+				},
+			},
+			approvers:        []string{login1, login2, login3},
+			expectedStatus:   approvalStatusPending,
+			minimumApprovals: 2,
+		},
 	}
 
 	for _, testCase := range testCases {
