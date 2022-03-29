@@ -48,7 +48,7 @@ func main() {
 	}
 
 	if minimumApprovals > len(approvers) {
-		fmt.Printf("warning: minimum required approvals (%v) is greater than the total number of approvers (%v)\n", minimumApprovals, len(approvers))
+		fmt.Printf("error: minimum required approvals (%v) is greater than the total number of approvers (%v)\n", minimumApprovals, len(approvers))
 		os.Exit(1)
 	}
 
