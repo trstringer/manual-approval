@@ -10,7 +10,7 @@ const (
 	envVarRepoOwner        string = "GITHUB_REPOSITORY_OWNER"
 	envVarToken            string = "INPUT_SECRET"
 	envVarApprovers        string = "INPUT_APPROVERS"
-	envVarMinimumApprovals string = "INPUT_MINIMUM_APPROVALS"
+	envVarMinimumApprovals string = "INPUT_MINIMUM-APPROVALS"
 )
 
 var (
