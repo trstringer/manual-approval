@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/signal"
 	"strconv"
 	"strings"
 	"time"
@@ -22,6 +23,8 @@ func newGithubClient(ctx context.Context) *github.Client {
 }
 
 func main() {
+	killSignal := make(chan os.Signal, 1)
+	signal.Notify(killSignal, os.Interrupt)
 	repoFullName := os.Getenv(envVarRepoFullName)
 	runID, err := strconv.Atoi(os.Getenv(envVarRunID))
 	if err != nil {
@@ -49,57 +52,68 @@ func main() {
 		os.Exit(1)
 	}
 
-commentLoop:
-	for {
-		comments, _, err := client.Issues.ListComments(ctx, apprv.repoOwner, apprv.repo, apprv.approvalIssueNumber, &github.IssueListCommentsOptions{})
-		if err != nil {
-			fmt.Printf("error getting comments: %v\n", err)
-			os.Exit(1)
+	go func() {
+	commentLoop:
+		for {
+			comments, _, err := client.Issues.ListComments(ctx, apprv.repoOwner, apprv.repo, apprv.approvalIssueNumber, &github.IssueListCommentsOptions{})
+			if err != nil {
+				fmt.Printf("error getting comments: %v\n", err)
+				os.Exit(1)
+			}
+
+			approved, err := approvalFromComments(comments, approvers)
+			if err != nil {
+				fmt.Printf("error getting approval from comments: %v\n", err)
+				os.Exit(1)
+			}
+			fmt.Printf("Workflow status: %s\n", approved)
+			switch approved {
+			case approvalStatusApproved:
+				newState := "closed"
+				closeComment := "All approvers have approved, continuing workflow and closing this issue."
+				_, _, err := client.Issues.CreateComment(ctx, apprv.repoOwner, apprv.repo, apprv.approvalIssueNumber, &github.IssueComment{
+					Body: &closeComment,
+				})
+				if err != nil {
+					fmt.Printf("error commenting on issue: %v\n", err)
+					os.Exit(1)
+				}
+				_, _, err = client.Issues.Edit(ctx, apprv.repoOwner, apprv.repo, apprv.approvalIssueNumber, &github.IssueRequest{State: &newState})
+				if err != nil {
+					fmt.Printf("error closing issue: %v\n", err)
+					os.Exit(1)
+				}
+				break commentLoop
+			case approvalStatusDenied:
+				newState := "closed"
+				closeComment := "Request denied. Closing issue and failing workflow."
+				_, _, err := client.Issues.CreateComment(ctx, apprv.repoOwner, apprv.repo, apprv.approvalIssueNumber, &github.IssueComment{
+					Body: &closeComment,
+				})
+				if err != nil {
+					fmt.Printf("error commenting on issue: %v\n", err)
+					os.Exit(1)
+				}
+				_, _, err = client.Issues.Edit(ctx, apprv.repoOwner, apprv.repo, apprv.approvalIssueNumber, &github.IssueRequest{State: &newState})
+				if err != nil {
+					fmt.Printf("error closing issue: %v\n", err)
+					os.Exit(1)
+				}
+				os.Exit(1)
+			}
+
+			time.Sleep(pollingInterval)
 		}
 
-		approved, err := approvalFromComments(comments, approvers)
-		if err != nil {
-			fmt.Printf("error getting approval from comments: %v\n", err)
-			os.Exit(1)
-		}
-		fmt.Printf("Workflow status: %s\n", approved)
-		switch approved {
-		case approvalStatusApproved:
-			newState := "closed"
-			closeComment := "All approvers have approved, continuing workflow and closing this issue."
-			_, _, err := client.Issues.CreateComment(ctx, apprv.repoOwner, apprv.repo, apprv.approvalIssueNumber, &github.IssueComment{
-				Body: &closeComment,
-			})
-			if err != nil {
-				fmt.Printf("error commenting on issue: %v\n", err)
-				os.Exit(1)
-			}
-			_, _, err = client.Issues.Edit(ctx, apprv.repoOwner, apprv.repo, apprv.approvalIssueNumber, &github.IssueRequest{State: &newState})
-			if err != nil {
-				fmt.Printf("error closing issue: %v\n", err)
-				os.Exit(1)
-			}
-			break commentLoop
-		case approvalStatusDenied:
-			newState := "closed"
-			closeComment := "Request denied. Closing issue and failing workflow."
-			_, _, err := client.Issues.CreateComment(ctx, apprv.repoOwner, apprv.repo, apprv.approvalIssueNumber, &github.IssueComment{
-				Body: &closeComment,
-			})
-			if err != nil {
-				fmt.Printf("error commenting on issue: %v\n", err)
-				os.Exit(1)
-			}
-			_, _, err = client.Issues.Edit(ctx, apprv.repoOwner, apprv.repo, apprv.approvalIssueNumber, &github.IssueRequest{State: &newState})
-			if err != nil {
-				fmt.Printf("error closing issue: %v\n", err)
-				os.Exit(1)
-			}
-			os.Exit(1)
-		}
-
-		time.Sleep(pollingInterval)
+		fmt.Println("Workflow manual approval completed")
+		os.Exit(0)
+	}()
+	<-killSignal
+	newState := "closed"
+	fmt.Println("Job was cancelled, closing issue")
+	_, _, err = client.Issues.Edit(ctx, apprv.repoOwner, apprv.repo, apprv.approvalIssueNumber, &github.IssueRequest{State: &newState})
+	if err != nil {
+		fmt.Printf("error closing issue: %v\n", err)
+		os.Exit(1)
 	}
-
-	fmt.Println("Workflow manual approval completed")
 }
