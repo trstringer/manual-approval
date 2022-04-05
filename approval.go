@@ -16,11 +16,12 @@ type approvalEnvironment struct {
 	repoOwner           string
 	runID               int
 	approvers           []string
+	minimumApprovals    int
 	approvalIssue       *github.Issue
 	approvalIssueNumber int
 }
 
-func newApprovalEnvironment(client *github.Client, repoFullName, repoOwner string, runID int, approvers []string) (*approvalEnvironment, error) {
+func newApprovalEnvironment(client *github.Client, repoFullName, repoOwner string, runID int, approvers []string, minimumApprovals int) (*approvalEnvironment, error) {
 	repoOwnerAndName := strings.Split(repoFullName, "/")
 	if len(repoOwnerAndName) != 2 {
 		return nil, fmt.Errorf("repo owner and name in unexpected format: %s", repoFullName)
@@ -28,12 +29,13 @@ func newApprovalEnvironment(client *github.Client, repoFullName, repoOwner strin
 	repo := repoOwnerAndName[1]
 
 	return &approvalEnvironment{
-		client:       client,
-		repoFullName: repoFullName,
-		repo:         repo,
-		repoOwner:    repoOwner,
-		runID:        runID,
-		approvers:    approvers,
+		client:           client,
+		repoFullName:     repoFullName,
+		repo:             repo,
+		repoOwner:        repoOwner,
+		runID:            runID,
+		approvers:        approvers,
+		minimumApprovals: minimumApprovals,
 	}, nil
 }
 
@@ -64,9 +66,13 @@ Respond %s to continue workflow or %s to cancel.`,
 	return err
 }
 
-func approvalFromComments(comments []*github.IssueComment, approvers []string) (approvalStatus, error) {
+func approvalFromComments(comments []*github.IssueComment, approvers []string, minimumApprovals int) (approvalStatus, error) {
 	remainingApprovers := make([]string, len(approvers))
 	copy(remainingApprovers, approvers)
+
+	if minimumApprovals == 0 {
+		minimumApprovals = len(approvers)
+	}
 
 	for _, comment := range comments {
 		commentUser := comment.User.GetLogin()
@@ -81,7 +87,7 @@ func approvalFromComments(comments []*github.IssueComment, approvers []string) (
 			return approvalStatusPending, err
 		}
 		if isApprovalComment {
-			if len(remainingApprovers) == 1 {
+			if len(remainingApprovers) == len(approvers)-minimumApprovals+1 {
 				return approvalStatusApproved, nil
 			}
 			remainingApprovers[approverIdx] = remainingApprovers[len(remainingApprovers)-1]
