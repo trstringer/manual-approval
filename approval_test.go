@@ -9,15 +9,17 @@ import (
 func TestApprovalFromComments(t *testing.T) {
 	login1 := "login1"
 	login2 := "login2"
+	login3 := "login3"
 	bodyApproved := "Approved"
 	bodyDenied := "Denied"
 	bodyPending := "not approval or denial"
 
 	testCases := []struct {
-		name           string
-		comments       []*github.IssueComment
-		approvers      []string
-		expectedStatus approvalStatus
+		name             string
+		comments         []*github.IssueComment
+		approvers        []string
+		minimumApprovals int
+		expectedStatus   approvalStatus
 	}{
 		{
 			name: "single_approver_single_comment_approved",
@@ -112,11 +114,55 @@ func TestApprovalFromComments(t *testing.T) {
 			approvers:      []string{login1, login2},
 			expectedStatus: approvalStatusDenied,
 		},
+		{
+			name: "multi_approver_minimum_one_approval",
+			comments: []*github.IssueComment{
+				{
+					User: &github.User{Login: &login1},
+					Body: &bodyPending,
+				},
+				{
+					User: &github.User{Login: &login2},
+					Body: &bodyApproved,
+				},
+			},
+			approvers:        []string{login1, login2},
+			expectedStatus:   approvalStatusApproved,
+			minimumApprovals: 1,
+		},
+		{
+			name: "multi_approver_minimum_two_approvals",
+			comments: []*github.IssueComment{
+				{
+					User: &github.User{Login: &login1},
+					Body: &bodyApproved,
+				},
+				{
+					User: &github.User{Login: &login2},
+					Body: &bodyApproved,
+				},
+			},
+			approvers:        []string{login1, login2, login3},
+			expectedStatus:   approvalStatusApproved,
+			minimumApprovals: 2,
+		},
+		{
+			name: "multi_approver_approvals_less_than_minimum",
+			comments: []*github.IssueComment{
+				{
+					User: &github.User{Login: &login1},
+					Body: &bodyApproved,
+				},
+			},
+			approvers:        []string{login1, login2, login3},
+			expectedStatus:   approvalStatusPending,
+			minimumApprovals: 2,
+		},
 	}
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			actual, err := approvalFromComments(testCase.comments, testCase.approvers)
+			actual, err := approvalFromComments(testCase.comments, testCase.approvers, testCase.minimumApprovals)
 			if err != nil {
 				t.Fatalf("error getting approval from comments: %v", err)
 			}
