@@ -19,10 +19,19 @@ func setupCloseHandler(ctx context.Context, apprv *approvalEnvironment, client *
 	go func(ctx context.Context, apprv *approvalEnvironment, client *github.Client) {
 		<-killSignal
 		newState := "closed"
-		fmt.Println("Job was cancelled, closing issue")
+		closeComment := "Workflow cancelled, closing issue"
+		fmt.Println(closeComment)
 		_, _, err := client.Issues.Edit(ctx, apprv.repoOwner, apprv.repo, apprv.approvalIssueNumber, &github.IssueRequest{State: &newState})
 		if err != nil {
 			fmt.Printf("error closing issue: %v\n", err)
+			os.Exit(1)
+		}
+		_, _, err = client.Issues.CreateComment(ctx, apprv.repoOwner, apprv.repo, apprv.approvalIssueNumber, &github.IssueComment{
+			Body: &closeComment,
+		})
+		if err != nil {
+			fmt.Printf("error commenting on issue: %v\n", err)
+			os.Exit(1)
 		}
 		os.Exit(1)
 	}(ctx, apprv, client)
@@ -134,6 +143,4 @@ commentLoop:
 
 		time.Sleep(pollingInterval)
 	}
-
-	fmt.Println("Workflow manual approval completed")
 }
