@@ -47,7 +47,6 @@ func newGithubClient(ctx context.Context) *github.Client {
 }
 
 func main() {
-
 	repoFullName := os.Getenv(envVarRepoFullName)
 	runID, err := strconv.Atoi(os.Getenv(envVarRunID))
 	if err != nil {
@@ -143,4 +142,6 @@ commentLoop:
 
 		time.Sleep(pollingInterval)
 	}
+
+	fmt.Println("Workflow manual approval completed")
 }
