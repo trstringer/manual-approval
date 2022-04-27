@@ -32,7 +32,6 @@ func handleInterrupt(client *github.Client, ctx context.Context, apprv *approval
 }
 
 func newCommentLoopChannel(ctx context.Context, apprv *approvalEnvironment, client *github.Client, approvers []string, minimumApprovals int) chan int {
-
 	channel := make(chan int)
 	go func() {
 		for {
