@@ -57,6 +57,14 @@ Respond %s to continue workflow or %s to cancel.`,
 		formatAcceptedWords(deniedWords),
 	)
 	var err error
+	fmt.Printf(
+		"Creating issue in repo %s/%s with the following content:\nTitle: %s\nApprovers: %s\nBody:\n%s",
+		a.repoOwner,
+		a.repo,
+		issueTitle,
+		a.approvers,
+		issueBody,
+	)
 	a.approvalIssue, _, err = a.client.Issues.Create(ctx, a.repoOwner, a.repo, &github.IssueRequest{
 		Title:     &issueTitle,
 		Body:      &issueBody,
