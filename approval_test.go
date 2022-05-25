@@ -216,6 +216,11 @@ func TestApprovedCommentBody(t *testing.T) {
 			isSuccess:   true,
 		},
 		{
+			name:        "approved_titlecase_multi_exclamation",
+			commentBody: "Approved!!",
+			isSuccess:   true,
+		},
+		{
 			name:        "approved_titlecase_question",
 			commentBody: "Approved?",
 			isSuccess:   false,
@@ -229,6 +234,21 @@ func TestApprovedCommentBody(t *testing.T) {
 			name:        "sentence_without_keyword",
 			commentBody: "this is just some random comment",
 			isSuccess:   false,
+		},
+		{
+			name:        "approved_with_newline",
+			commentBody: "approved\n",
+			isSuccess:   true,
+		},
+		{
+			name:        "approved_with_exclamation_newline",
+			commentBody: "approved!\n",
+			isSuccess:   true,
+		},
+		{
+			name:        "approved_with_multi_exclamation_multi_newline",
+			commentBody: "approved!!!\n\n\n",
+			isSuccess:   true,
 		},
 	}
 

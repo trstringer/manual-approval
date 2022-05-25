@@ -126,7 +126,7 @@ func approversIndex(approvers []string, name string) int {
 
 func isApproved(commentBody string) (bool, error) {
 	for _, approvedWord := range approvedWords {
-		matched, err := regexp.MatchString(fmt.Sprintf("(?i)^%s[.!]?$", approvedWord), commentBody)
+		matched, err := regexp.MatchString(fmt.Sprintf("(?i)^%s[.!]*\n*$", approvedWord), commentBody)
 		if err != nil {
 			return false, err
 		}
