@@ -58,7 +58,7 @@ Respond %s to continue workflow or %s to cancel.`,
 	)
 	var err error
 	fmt.Printf(
-		"Creating issue in repo %s/%s with the following content:\nTitle: %s\nApprovers: %s\nBody:\n%s",
+		"Creating issue in repo %s/%s with the following content:\nTitle: %s\nApprovers: %s\nBody:\n%s\n",
 		a.repoOwner,
 		a.repo,
 		issueTitle,
