@@ -137,7 +137,10 @@ func main() {
 		os.Exit(1)
 	}
 
-	apprv, err := newApprovalEnvironment(client, repoFullName, repoOwner, runID, approvers, minimumApprovals)
+	approvalIssueTitle := os.Getenv(envVarApprovalIssueTitle)
+
+	apprv, err := newApprovalEnvironment(client, repoFullName, repoOwner, runID, approvers, minimumApprovals, approvalIssueTitle)
+
 	if err != nil {
 		fmt.Printf("error creating approval environment: %v\n", err)
 		os.Exit(1)

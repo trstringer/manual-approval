@@ -10,6 +10,9 @@ inputs:
   minimum-approvals:
     description: Minimum number of approvals to progress workflow
     required: false
+  approval-issue-title:
+    description: The custom subtitle for the issue.
+    required: false
 runs:
   using: docker
   image: docker://ghcr.io/trstringer/manual-approval:1.4.0
