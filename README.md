@@ -31,9 +31,9 @@ steps:
       secret: ${{ github.TOKEN }}
       approvers: user1,user2
       minimum-approvals: 1
-      approval-issue-title: "title"
+      issue-title: "Deploying v1.3.5 to prod from staging."
 ```
 
 - `approvers` is a comma-delimited list of all required approvers.
 - `minimum-approvals` is an integer that sets the minimum number of approvals required to progress the workflow. Defaults to ALL approvers.
-- `approval-issue-title` is a string that will be appened to the title of the issue.
+- `issue-title` is a string that will be appened to the title of the issue.
