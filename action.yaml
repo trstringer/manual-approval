@@ -11,7 +11,7 @@ inputs:
     description: Minimum number of approvals to progress workflow
     required: false
   issue-title:
-    description: The custom subtitle for the issue.
+    description: The custom subtitle for the issue
     required: false
 runs:
   using: docker
