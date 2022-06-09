@@ -31,7 +31,7 @@ steps:
       secret: ${{ github.TOKEN }}
       approvers: user1,user2
       minimum-approvals: 1
-      issue-title: "Deploying v1.3.5 to prod from staging."
+      issue-title: "Deploying v1.3.5 to prod from staging"
 ```
 
 - `approvers` is a comma-delimited list of all required approvers.
