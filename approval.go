@@ -19,9 +19,10 @@ type approvalEnvironment struct {
 	minimumApprovals    int
 	approvalIssue       *github.Issue
 	approvalIssueNumber int
+	issueTitle          string
 }
 
-func newApprovalEnvironment(client *github.Client, repoFullName, repoOwner string, runID int, approvers []string, minimumApprovals int) (*approvalEnvironment, error) {
+func newApprovalEnvironment(client *github.Client, repoFullName, repoOwner string, runID int, approvers []string, minimumApprovals int, issueTitle string) (*approvalEnvironment, error) {
 	repoOwnerAndName := strings.Split(repoFullName, "/")
 	if len(repoOwnerAndName) != 2 {
 		return nil, fmt.Errorf("repo owner and name in unexpected format: %s", repoFullName)
@@ -36,6 +37,7 @@ func newApprovalEnvironment(client *github.Client, repoFullName, repoOwner strin
 		runID:            runID,
 		approvers:        approvers,
 		minimumApprovals: minimumApprovals,
+		issueTitle:       issueTitle,
 	}, nil
 }
 
@@ -45,6 +47,11 @@ func (a approvalEnvironment) runURL() string {
 
 func (a *approvalEnvironment) createApprovalIssue(ctx context.Context) error {
 	issueTitle := fmt.Sprintf("Manual approval required for workflow run %d", a.runID)
+
+	if a.issueTitle != "" {
+		issueTitle = fmt.Sprintf("%s: %s", issueTitle, a.issueTitle)
+	}
+
 	issueBody := fmt.Sprintf(`Workflow is pending manual review.
 URL: %s
 
