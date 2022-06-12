@@ -15,4 +15,4 @@ inputs:
     required: false
 runs:
   using: docker
-  image: docker://ghcr.io/trstringer/manual-approval:1.4.0
+  image: docker://ghcr.io/trstringer/manual-approval:1.5.0
