@@ -38,6 +38,19 @@ steps:
 - `minimum-approvals` is an integer that sets the minimum number of approvals required to progress the workflow. Defaults to ALL approvers.
 - `issue-title` is a string that will be appened to the title of the issue.
 
+## Timeout
+
+If you'd like to force a timeout of your workflow pause, you can specify `timeout-minutes` at either the [step](https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idstepstimeout-minutes) level or the [job](https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idtimeout-minutes) level.
+
+For instance, if you want your manual approval step to timeout after an hour you could do the following:
+
+```yaml
+steps:
+  - uses: trstringer/manual-approval@v1
+    timeout-minutes: 60
+    ...
+```
+
 ## Limitations
 
 * While the workflow is paused, it will still continue to consume a concurrent job allocation out of the [max concurrent jobs](https://docs.github.com/en/actions/learn-github-actions/usage-limits-billing-and-administration#usage-limits)
