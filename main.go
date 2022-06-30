@@ -13,7 +13,7 @@ import (
 	"golang.org/x/oauth2"
 )
 
-func handleInterrupt(client *github.Client, ctx context.Context, apprv *approvalEnvironment) {
+func handleInterrupt(ctx context.Context, client *github.Client, apprv *approvalEnvironment) {
 	newState := "closed"
 	closeComment := "Workflow cancelled, closing issue."
 	fmt.Println(closeComment)
@@ -158,8 +158,8 @@ func main() {
 	select {
 	case exitCode := <-commentLoopChannel:
 		os.Exit(exitCode)
-	case _ = <-killSignalChannel:
-		handleInterrupt(client, ctx, apprv)
+	case <-killSignalChannel:
+		handleInterrupt(ctx, client, apprv)
 		os.Exit(1)
 	}
 }
