@@ -147,7 +147,7 @@ func isApproved(commentBody string) (bool, error) {
 
 func isDenied(commentBody string) (bool, error) {
 	for _, deniedWord := range deniedWords {
-		matched, err := regexp.MatchString(fmt.Sprintf("(?i)^%s[.!]?$", deniedWord), commentBody)
+		matched, err := regexp.MatchString(fmt.Sprintf("(?i)^%s[.!]*\n*$", deniedWord), commentBody)
 		if err != nil {
 			return false, err
 		}
