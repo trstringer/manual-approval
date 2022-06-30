@@ -316,6 +316,11 @@ func TestDeniedCommentBody(t *testing.T) {
 			commentBody: "this is just some random comment",
 			isSuccess:   false,
 		},
+		{
+			name:        "denied_with_newline",
+			commentBody: "denied\n",
+			isSuccess:   true,
+		},
 	}
 
 	for _, testCase := range testCases {
