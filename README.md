@@ -34,7 +34,7 @@ steps:
       issue-title: "Deploying v1.3.5 to prod from staging"
 ```
 
-- `approvers` is a comma-delimited list of all required approvers.
+- `approvers` is a comma-delimited list of all required approvers. (*Note: Required approvers must have the ability to be set as approvers in the repository. If you add an approver that doesn't have this permission then you would receive an HTTP/402 Validation Failed error when running this action*)
 - `minimum-approvals` is an integer that sets the minimum number of approvals required to progress the workflow. Defaults to ALL approvers.
 - `issue-title` is a string that will be appened to the title of the issue.
 
@@ -53,6 +53,6 @@ steps:
 
 ## Limitations
 
-* While the workflow is paused, it will still continue to consume a concurrent job allocation out of the [max concurrent jobs](https://docs.github.com/en/actions/learn-github-actions/usage-limits-billing-and-administration#usage-limits)
-* A job (including a paused job) will be failed [after 6 hours](https://docs.github.com/en/actions/learn-github-actions/usage-limits-billing-and-administration#usage-limits)
-* A paused job is still running compute/instance/virtual machine and will continue to incur costs
+* While the workflow is paused, it will still continue to consume a concurrent job allocation out of the [max concurrent jobs](https://docs.github.com/en/actions/learn-github-actions/usage-limits-billing-and-administration#usage-limits).
+* A job (including a paused job) will be failed [after 6 hours](https://docs.github.com/en/actions/learn-github-actions/usage-limits-billing-and-administration#usage-limits).
+* A paused job is still running compute/instance/virtual machine and will continue to incur costs.
