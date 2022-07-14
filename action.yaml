@@ -1,5 +1,8 @@
 name: Manual Workflow Approval
 description: Pause a workflow and get user approval to continue
+branding:
+  icon: pause
+  color: yellow
 inputs:
   approvers:
     description: Required approvers
