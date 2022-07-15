@@ -15,11 +15,11 @@ type approvalEnvironment struct {
 	repo                string
 	repoOwner           string
 	runID               int
-	approvers           []string
-	minimumApprovals    int
 	approvalIssue       *github.Issue
 	approvalIssueNumber int
 	issueTitle          string
+	issueApprovers      []string
+	minimumApprovals    int
 }
 
 func newApprovalEnvironment(client *github.Client, repoFullName, repoOwner string, runID int, approvers []string, minimumApprovals int, issueTitle string) (*approvalEnvironment, error) {
@@ -35,7 +35,7 @@ func newApprovalEnvironment(client *github.Client, repoFullName, repoOwner strin
 		repo:             repo,
 		repoOwner:        repoOwner,
 		runID:            runID,
-		approvers:        approvers,
+		issueApprovers:   approvers,
 		minimumApprovals: minimumApprovals,
 		issueTitle:       issueTitle,
 	}, nil
@@ -59,7 +59,7 @@ Required approvers: %s
 
 Respond %s to continue workflow or %s to cancel.`,
 		a.runURL(),
-		a.approvers,
+		a.issueApprovers,
 		formatAcceptedWords(approvedWords),
 		formatAcceptedWords(deniedWords),
 	)
@@ -69,13 +69,13 @@ Respond %s to continue workflow or %s to cancel.`,
 		a.repoOwner,
 		a.repo,
 		issueTitle,
-		a.approvers,
+		a.issueApprovers,
 		issueBody,
 	)
 	a.approvalIssue, _, err = a.client.Issues.Create(ctx, a.repoOwner, a.repo, &github.IssueRequest{
 		Title:     &issueTitle,
 		Body:      &issueBody,
-		Assignees: &a.approvers,
+		Assignees: &a.issueApprovers,
 	})
 	a.approvalIssueNumber = a.approvalIssue.GetNumber()
 	return err
