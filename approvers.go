@@ -45,8 +45,10 @@ func retrieveApprovers(client *github.Client, repoOwner string) ([]string, error
 }
 
 func expandGroupFromUser(client *github.Client, org, userOrTeam string) []string {
+	fmt.Printf("Attempting to expand user %s/%s as a group (may not succeed)\n", org, userOrTeam)
 	users, _, err := client.Teams.ListTeamMembersBySlug(context.Background(), org, userOrTeam, &github.TeamListTeamMembersOptions{})
-	if err != nil || len(users) == 0 {
+	if err != nil {
+		fmt.Printf("%v\n", err)
 		return nil
 	}
 
