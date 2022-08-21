@@ -16,6 +16,10 @@ func retrieveApprovers(client *github.Client, repoOwner string) ([]string, error
 	requiredApproversRaw := os.Getenv(envVarApprovers)
 	requiredApprovers := strings.Split(requiredApproversRaw, ",")
 
+	for i := range requiredApprovers {
+		requiredApprovers[i] = strings.TrimSpace(requiredApprovers[i]) 
+	}
+	
 	for _, approverUser := range requiredApprovers {
 		expandedUsers := expandGroupFromUser(client, repoOwner, approverUser)
 		if expandedUsers != nil {
