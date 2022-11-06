@@ -76,6 +76,17 @@ steps:
     ...
 ```
 
+## Permissions
+
+For the action to create a new issue in your project, please ensure that the action has write permissions on issues. You may have to add the following to your workflow:
+
+```yaml
+permissions:
+  issues: write
+```
+
+For more information on permissions, please look at the [GitHub documentation](https://docs.github.com/en/actions/using-jobs/assigning-permissions-to-jobs).
+
 ## Limitations
 
 * While the workflow is paused, it will still continue to consume a concurrent job allocation out of the [max concurrent jobs](https://docs.github.com/en/actions/learn-github-actions/usage-limits-billing-and-administration#usage-limits).
