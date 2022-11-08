@@ -61,11 +61,11 @@ func expandGroupFromUser(client *github.Client, org, userOrTeam string, workflow
 
 	userNames := make([]string, 0, len(users))
 	for _, user := range users {
-		username := user.GetLogin()
-		if strings.EqualFold(username, workflowInitiator) {
-			fmt.Printf("Not adding user '%s' from group '%s' as an approver as they are the workflow initiator\n", username, userOrTeam)
+		userName := user.GetLogin()
+		if strings.EqualFold(userName, workflowInitiator) {
+			fmt.Printf("Not adding user '%s' from group '%s' as an approver as they are the workflow initiator\n", userName, userOrTeam)
 		} else {
-			userNames = append(userNames, username)
+			userNames = append(userNames, userName)
 		}
 	}
 
