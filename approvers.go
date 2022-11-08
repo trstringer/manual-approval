@@ -25,10 +25,9 @@ func retrieveApprovers(client *github.Client, repoOwner string) ([]string, error
 		expandedUsers := expandGroupFromUser(client, repoOwner, approverUser, workflowInitiator)
 		if expandedUsers != nil {
 			approvers = append(approvers, expandedUsers...)
+		} else if strings.EqualFold(workflowInitiator, approverUser) {
+			fmt.Printf("Not adding user '%s' as an approver as they are the workflow initiator\n", approverUser)
 		} else {
-			if strings.EqualFold(workflowInitiator, approverUser) {
-				fmt.Printf("Not adding user '%s' as an approver as they are the workflow initiator\n", approverUser)
-			}
 			approvers = append(approvers, approverUser)
 		}
 	}
