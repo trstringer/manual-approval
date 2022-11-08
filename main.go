@@ -107,7 +107,7 @@ func newGithubClient(ctx context.Context) (*github.Client, error) {
 	apiUrl, apiUrlPresent := os.LookupEnv("GITHUB_API_URL")
 
 	if serverUrlPresent {
-		if ! apiUrlPresent {
+		if !apiUrlPresent {
 			apiUrl = serverUrl
 		}
 		return github.NewEnterpriseClient(apiUrl, serverUrl, tc)
