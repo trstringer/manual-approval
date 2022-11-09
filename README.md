@@ -44,6 +44,8 @@ If you want to have `approvers` set to an org team, then you need to take a diff
 
 Create a GitHub App with **read-only access to organization members**. Once the app is created, add a repo secret with the app ID. In the GitHub App settings, generate a private key and add that as a secret in the repo as well. You can get the app token by using the [`tibdex/github-app-token`](https://github.com/tibdex/github-app-token) GitHub Action:
 
+*Note: The GitHub App tokens expire after 1 hour which implies duration for the approval cannot exceed 60 minutes or the job will fail due to bad credentials. See [docs](https://docs.github.com/en/rest/apps/apps#create-an-installation-access-token-for-an-app).*
+
 ```yaml
 jobs:
   myjob:
