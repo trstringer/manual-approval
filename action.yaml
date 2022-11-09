@@ -16,6 +16,9 @@ inputs:
   issue-title:
     description: The custom subtitle for the issue
     required: false
+  allow-workflow-initiator-as-approver:
+    description: Whether or not to include the user who initiated the workflow as an approver.
+    default: true
 runs:
   using: docker
   image: docker://ghcr.io/trstringer/manual-approval:1.7.0
