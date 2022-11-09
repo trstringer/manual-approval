@@ -17,7 +17,7 @@ inputs:
     description: The custom subtitle for the issue
     required: false
   allow-workflow-initiator-as-approver:
-    description: Whether or not to include the user who initiated the workflow as an approver.
+    description: Whether or not to filter out the user who initiated the workflow as an approver if they are in the approvers list
     default: true
 runs:
   using: docker
