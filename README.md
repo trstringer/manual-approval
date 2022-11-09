@@ -32,11 +32,13 @@ steps:
       approvers: user1,user2,org-team1
       minimum-approvals: 1
       issue-title: "Deploying v1.3.5 to prod from staging"
+      allow-workflow-initiator-as-approver: true # Optional, defaults to true
 ```
 
 - `approvers` is a comma-delimited list of all required approvers. An approver can either be a user or an org team. (*Note: Required approvers must have the ability to be set as approvers in the repository. If you add an approver that doesn't have this permission then you would receive an HTTP/402 Validation Failed error when running this action*)
 - `minimum-approvals` is an integer that sets the minimum number of approvals required to progress the workflow. Defaults to ALL approvers.
 - `issue-title` is a string that will be appended to the title of the issue.
+- `allow-workflow-initiator-as-approver` is a boolean that indicates if the workflow initiator (determined by the `GITHUB_ACTOR` environment variable) should be included in the final list of approvers. Set this to `false` to prevent users in the `approvers` list from being able to self-approve workflows.
 
 ## Org team approver
 
