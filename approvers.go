@@ -15,7 +15,7 @@ func retrieveApprovers(client *github.Client, repoOwner string) ([]string, error
 	shouldExcludeWorkflowInitiatorRaw := os.Getenv(envVarExcludeWorkflowInitiatorAsApprover)
 	shouldExcludeWorkflowInitiator, parseBoolErr := strconv.ParseBool(shouldExcludeWorkflowInitiatorRaw)
 	if parseBoolErr != nil {
-		return nil, fmt.Errorf("error parsing allow-workflow-initiator-as-approver flag: %w", parseBoolErr)
+		return nil, fmt.Errorf("error parsing exclude-workflow-initiator-as-approver flag: %w", parseBoolErr)
 	}
 
 	approvers := []string{}
