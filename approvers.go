@@ -12,8 +12,8 @@ import (
 
 func retrieveApprovers(client *github.Client, repoOwner string) ([]string, error) {
 	workflowInitiator := os.Getenv(envVarWorkflowInitiator)
-	shouldIncludeWorkflowInitiatorRaw := os.Getenv(envVarAllowWorkflowInitiatorAsApprover)
-	shouldIncludeWorkflowInitiator, parseBoolErr := strconv.ParseBool(shouldIncludeWorkflowInitiatorRaw)
+	shouldExcludeWorkflowInitiatorRaw := os.Getenv(envVarExcludeWorkflowInitiatorAsApprover)
+	shouldExcludeWorkflowInitiator, parseBoolErr := strconv.ParseBool(shouldExcludeWorkflowInitiatorRaw)
 	if parseBoolErr != nil {
 		return nil, fmt.Errorf("error parsing allow-workflow-initiator-as-approver flag: %w", parseBoolErr)
 	}
@@ -27,10 +27,10 @@ func retrieveApprovers(client *github.Client, repoOwner string) ([]string, error
 	}
 
 	for _, approverUser := range requiredApprovers {
-		expandedUsers := expandGroupFromUser(client, repoOwner, approverUser, workflowInitiator, shouldIncludeWorkflowInitiator)
+		expandedUsers := expandGroupFromUser(client, repoOwner, approverUser, workflowInitiator, shouldExcludeWorkflowInitiator)
 		if expandedUsers != nil {
 			approvers = append(approvers, expandedUsers...)
-		} else if strings.EqualFold(workflowInitiator, approverUser) && !shouldIncludeWorkflowInitiator {
+		} else if strings.EqualFold(workflowInitiator, approverUser) && shouldExcludeWorkflowInitiator {
 			fmt.Printf("Not adding user '%s' as an approver as they are the workflow initiator\n", approverUser)
 		} else {
 			approvers = append(approvers, approverUser)
@@ -56,7 +56,7 @@ func retrieveApprovers(client *github.Client, repoOwner string) ([]string, error
 	return approvers, nil
 }
 
-func expandGroupFromUser(client *github.Client, org, userOrTeam string, workflowInitiator string, shouldIncludeWorkflowInitiator bool) []string {
+func expandGroupFromUser(client *github.Client, org, userOrTeam string, workflowInitiator string, shouldExcludeWorkflowInitiator bool) []string {
 	fmt.Printf("Attempting to expand user %s/%s as a group (may not succeed)\n", org, userOrTeam)
 	users, _, err := client.Teams.ListTeamMembersBySlug(context.Background(), org, userOrTeam, &github.TeamListTeamMembersOptions{})
 	if err != nil {
@@ -67,7 +67,7 @@ func expandGroupFromUser(client *github.Client, org, userOrTeam string, workflow
 	userNames := make([]string, 0, len(users))
 	for _, user := range users {
 		userName := user.GetLogin()
-		if strings.EqualFold(userName, workflowInitiator) && !shouldIncludeWorkflowInitiator {
+		if strings.EqualFold(userName, workflowInitiator) && shouldExcludeWorkflowInitiator {
 			fmt.Printf("Not adding user '%s' from group '%s' as an approver as they are the workflow initiator\n", userName, userOrTeam)
 		} else {
 			userNames = append(userNames, userName)
