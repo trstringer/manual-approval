@@ -21,4 +21,4 @@ inputs:
     default: false
 runs:
   using: docker
-  image: docker://ghcr.io/trstringer/manual-approval-test:1.7.0
+  image: docker://ghcr.io/trstringer/manual-approval:1.7.0
