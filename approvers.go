@@ -58,7 +58,13 @@ func retrieveApprovers(client *github.Client, repoOwner string) ([]string, error
 
 func expandGroupFromUser(client *github.Client, org, userOrTeam string, workflowInitiator string, shouldExcludeWorkflowInitiator bool) []string {
 	fmt.Printf("Attempting to expand user %s/%s as a group (may not succeed)\n", org, userOrTeam)
-	users, _, err := client.Teams.ListTeamMembersBySlug(context.Background(), org, userOrTeam, &github.TeamListTeamMembersOptions{})
+
+	// GitHub replaces periods in the team name with hyphens. If a period is
+	// passed to the request it would result in a 404. So we need to replace
+	// and occurrences with a hyphen.
+	formattedUserOrteam := strings.ReplaceAll(userOrTeam, ".", "-")
+
+	users, _, err := client.Teams.ListTeamMembersBySlug(context.Background(), org, formattedUserOrteam, &github.TeamListTeamMembersOptions{})
 	if err != nil {
 		fmt.Printf("%v\n", err)
 		return nil
