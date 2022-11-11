@@ -62,9 +62,9 @@ func expandGroupFromUser(client *github.Client, org, userOrTeam string, workflow
 	// GitHub replaces periods in the team name with hyphens. If a period is
 	// passed to the request it would result in a 404. So we need to replace
 	// and occurrences with a hyphen.
-	formattedUserOrteam := strings.ReplaceAll(userOrTeam, ".", "-")
+	formattedUserOrTeam := strings.ReplaceAll(userOrTeam, ".", "-")
 
-	users, _, err := client.Teams.ListTeamMembersBySlug(context.Background(), org, formattedUserOrteam, &github.TeamListTeamMembersOptions{})
+	users, _, err := client.Teams.ListTeamMembersBySlug(context.Background(), org, formattedUserOrTeam, &github.TeamListTeamMembersOptions{})
 	if err != nil {
 		fmt.Printf("%v\n", err)
 		return nil
