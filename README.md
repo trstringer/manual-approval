@@ -150,3 +150,4 @@ For `uses`, this should point to your repo and dev branch.
 1. Make sure to fetch the new changes into your local repo: `$ git checkout main && git fetch origin && git merge origin main`
 1. Delete the `v1` tag locally and remotely: `$ git tag -d v1 && git push --delete origin v1`
 1. Create and push new tags: `$ git tag v1.7.0 && git tag v1 && git push origin --tags`
+1. Create the GitHub project release
