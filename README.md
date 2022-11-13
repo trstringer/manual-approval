@@ -96,3 +96,57 @@ For more information on permissions, please look at the [GitHub documentation](h
 * While the workflow is paused, it will still continue to consume a concurrent job allocation out of the [max concurrent jobs](https://docs.github.com/en/actions/learn-github-actions/usage-limits-billing-and-administration#usage-limits).
 * A job (including a paused job) will be failed [after 6 hours](https://docs.github.com/en/actions/learn-github-actions/usage-limits-billing-and-administration#usage-limits).
 * A paused job is still running compute/instance/virtual machine and will continue to incur costs.
+
+## Development
+
+### Running test code
+
+To test out your code in an action, you need to build the image and push it to a different container registry repository. For instance, if I want to test some code I won't build the image with the main image repository. Prior to this, comment out the label binding the image to a repo:
+
+```dockerfile
+# LABEL org.opencontainers.image.source https://github.com/trstringer/manual-approval
+```
+
+Build the image:
+
+```
+$ VERSION=1.7.1-rc.1 make IMAGE_REPO=ghcr.io/trstringer/manual-approval-test build
+```
+
+*Note: The image version can be whatever you want, as this image wouldn't be pushed to production. It is only for testing.*
+
+Push the image to your container registry:
+
+```
+$ VERSION=1.7.1-rc.1 make IMAGE_REPO=ghcr.io/trstringer/manual-approval-test push
+```
+
+To test out the image you will need to modify `action.yaml` so that it points to your new image that you're testing:
+
+```yaml
+  image: docker://ghcr.io/trstringer/manual-approval-test:1.7.0-rc.1
+```
+
+Then to test out the image, run a workflow specifying your dev branch:
+
+```yaml
+- name: Wait for approval
+  uses: your-github-user/manual-approval@your-dev-branch
+  with:
+    secret: ${{ secrets.GITHUB_TOKEN }}
+    approvers: trstringer
+```
+
+For `uses`, this should point to your repo and dev branch.
+
+*Note: To test out the action that uses an approver that is an org team, refer to the [org team approver](#org-team-approver) section for instructions.*
+
+### Create a release
+
+1. Build the new version's image: `$ VERSION=1.7.0 make build`
+1. Push the new image: `$ VERSION=1.7.0 make push`
+1. Create a release branch and modify `action.yaml` to point to the new image
+1. Open and merge a PR to add these changes to the default branch
+1. Make sure to fetch the new changes into your local repo: `$ git checkout main && git fetch origin && git merge origin main`
+1. Delete the `v1` tag locally and remotely: `$ git tag -d v1 && git push --delete origin v1`
+1. Create and push new tags: `$ git tag v1.7.0 && git tag v1 && git push origin --tags`
