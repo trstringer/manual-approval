@@ -77,8 +77,13 @@ Respond %s to continue workflow or %s to cancel.`,
 		Body:      &issueBody,
 		Assignees: &a.issueApprovers,
 	})
+	if err != nil {
+		return err
+	}
 	a.approvalIssueNumber = a.approvalIssue.GetNumber()
-	return err
+
+	fmt.Printf("Issue created: %s\n", a.approvalIssue.GetURL())
+	return nil
 }
 
 func approvalFromComments(comments []*github.IssueComment, approvers []string, minimumApprovals int) (approvalStatus, error) {
