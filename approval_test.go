@@ -283,6 +283,12 @@ func TestApprovedCommentBody(t *testing.T) {
 			isSuccess:          true,
 			customApprovalWord: "#shipit",
 		},
+		{
+			name:               "approved_with_actual_emoji_✅",
+			commentBody:        "✅ ",
+			isSuccess:          true,
+			customApprovalWord: "✅",
+		},
 	}
 
 	for _, testCase := range testCases {
@@ -385,7 +391,7 @@ func TestDeniedCommentBody(t *testing.T) {
 		},
 		{
 			name:             "denied_with_github_emoji",
-			commentBody:      ":no_entry_sign:",
+			commentBody:      ":no_entry_sign: ",
 			isSuccess:        true,
 			customDenialWord: ":no_entry_sign:",
 		},
