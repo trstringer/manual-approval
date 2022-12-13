@@ -250,6 +250,11 @@ func TestApprovedCommentBody(t *testing.T) {
 			commentBody: "approved!!!\n\n\n",
 			isSuccess:   true,
 		},
+		{
+			name:        "YOLO",
+			commentBody: "YOLO",
+			isSuccess:   true,
+		},
 	}
 
 	for _, testCase := range testCases {
