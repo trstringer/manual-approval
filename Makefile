@@ -34,4 +34,4 @@ buildx:
 		echo "VERSION is required"; \
 		exit 1; \
 	fi
-	docker buildx build --platform linux/amd64,linux/arm64 --push .
+	docker buildx build -t $(IMAGE_REPO):$$VERSION --platform linux/amd64,linux/arm64 --push .
