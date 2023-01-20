@@ -18,11 +18,12 @@ type approvalEnvironment struct {
 	approvalIssue       *github.Issue
 	approvalIssueNumber int
 	issueTitle          string
+	issueBody           string
 	issueApprovers      []string
 	minimumApprovals    int
 }
 
-func newApprovalEnvironment(client *github.Client, repoFullName, repoOwner string, runID int, approvers []string, minimumApprovals int, issueTitle string) (*approvalEnvironment, error) {
+func newApprovalEnvironment(client *github.Client, repoFullName, repoOwner string, runID int, approvers []string, minimumApprovals int, issueTitle, issueBody string) (*approvalEnvironment, error) {
 	repoOwnerAndName := strings.Split(repoFullName, "/")
 	if len(repoOwnerAndName) != 2 {
 		return nil, fmt.Errorf("repo owner and name in unexpected format: %s", repoFullName)
@@ -38,6 +39,7 @@ func newApprovalEnvironment(client *github.Client, repoFullName, repoOwner strin
 		issueApprovers:   approvers,
 		minimumApprovals: minimumApprovals,
 		issueTitle:       issueTitle,
+		issueBody:        issueBody,
 	}, nil
 }
 
@@ -63,6 +65,11 @@ Respond %s to continue workflow or %s to cancel.`,
 		formatAcceptedWords(approvedWords),
 		formatAcceptedWords(deniedWords),
 	)
+
+	if a.issueBody != "" {
+		issueBody = fmt.Sprintf("%s\n\n%s", a.issueBody, issueBody)
+	}
+
 	var err error
 	fmt.Printf(
 		"Creating issue in repo %s/%s with the following content:\nTitle: %s\nApprovers: %s\nBody:\n%s\n",

@@ -13,6 +13,7 @@ const (
 	envVarApprovers                          string = "INPUT_APPROVERS"
 	envVarMinimumApprovals                   string = "INPUT_MINIMUM-APPROVALS"
 	envVarIssueTitle                         string = "INPUT_ISSUE-TITLE"
+	envVarIssueBody                          string = "INPUT_ISSUE-BODY"
 	envVarExcludeWorkflowInitiatorAsApprover string = "INPUT_EXCLUDE-WORKFLOW-INITIATOR-AS-APPROVER"
 )
 
