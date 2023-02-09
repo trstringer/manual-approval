@@ -21,7 +21,7 @@ type approvalEnvironment struct {
 	issueBody           string
 	issueApprovers      []string
 	minimumApprovals    int
-	pollInterval				time.Duration
+	pollInterval        time.Duration
 }
 
 func newApprovalEnvironment(client *github.Client, repoFullName, repoOwner string, runID int, approvers []string, minimumApprovals int, issueTitle, issueBody string, pollInterval time.Duration) (*approvalEnvironment, error) {
@@ -41,7 +41,7 @@ func newApprovalEnvironment(client *github.Client, repoFullName, repoOwner strin
 		minimumApprovals: minimumApprovals,
 		issueTitle:       issueTitle,
 		issueBody:        issueBody,
-		pollInterval:			pollInterval
+		pollInterval:     pollInterval
 	}, nil
 }
 
