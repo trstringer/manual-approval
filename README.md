@@ -34,6 +34,7 @@ steps:
       issue-title: "Deploying v1.3.5 to prod from staging"
       issue-body: "Please approve or deny the deployment of version v1.3.5."
       exclude-workflow-initiator-as-approver: false
+      poll-interval: 30
 ```
 
 - `approvers` is a comma-delimited list of all required approvers. An approver can either be a user or an org team. (*Note: Required approvers must have the ability to be set as approvers in the repository. If you add an approver that doesn't have this permission then you would receive an HTTP/402 Validation Failed error when running this action*)
@@ -41,6 +42,7 @@ steps:
 - `issue-title` is a string that will be appended to the title of the issue.
 - `issue-body` is a string that will be prepended to the body of the issue.
 - `exclude-workflow-initiator-as-approver` is a boolean that indicates if the workflow initiator (determined by the `GITHUB_ACTOR` environment variable) should be filtered from the final list of approvers. This is optional and defaults to `false`. Set this to `true` to prevent users in the `approvers` list from being able to self-approve workflows.
+- `poll-interval` is an integer that sets the rate at which the Github API will be polled for updates (in seconds). Defaults to 10.
 
 ## Org team approver
 
