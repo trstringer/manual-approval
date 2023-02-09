@@ -90,7 +90,7 @@ func newCommentLoopChannel(ctx context.Context, apprv *approvalEnvironment, clie
 				close(channel)
 			}
 
-			time.Sleep(pollingInterval)
+			time.Sleep(apprv.pollInterval)
 		}
 	}()
 	return channel
@@ -181,7 +181,18 @@ func main() {
 			os.Exit(1)
 		}
 	}
-	apprv, err := newApprovalEnvironment(client, repoFullName, repoOwner, runID, approvers, minimumApprovals, issueTitle, issueBody)
+
+	pollIntervalRaw := os.Getenv(envVarPollInterval)
+	pollInterval := 10 * time.Second
+	if pollIntervalRaw != "" {
+		pollInterval, err = strconv.Atoi(pollIntervalRaw) * time.Second
+		if err != nil {
+			fmt.Printf("error parsing poll interval: %v\n", err)
+			os.Exit(1)
+		}
+	}
+
+	apprv, err := newApprovalEnvironment(client, repoFullName, repoOwner, runID, approvers, minimumApprovals, issueTitle, issueBody, pollInterval)
 	if err != nil {
 		fmt.Printf("error creating approval environment: %v\n", err)
 		os.Exit(1)

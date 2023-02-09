@@ -22,6 +22,9 @@ inputs:
   exclude-workflow-initiator-as-approver:
     description: Whether or not to filter out the user who initiated the workflow as an approver if they are in the approvers list
     default: false
+  poll-interval:
+    description: The frequency, in seconds, at which to poll the GitHub API for updates to comments on issues
+    default: 10
 runs:
   using: docker
   image: docker://ghcr.io/trstringer/manual-approval:1.8.0

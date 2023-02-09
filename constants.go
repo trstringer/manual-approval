@@ -3,8 +3,6 @@ package main
 import "time"
 
 const (
-	pollingInterval time.Duration = 10 * time.Second
-
 	envVarRepoFullName                       string = "GITHUB_REPOSITORY"
 	envVarRunID                              string = "GITHUB_RUN_ID"
 	envVarRepoOwner                          string = "GITHUB_REPOSITORY_OWNER"
@@ -15,6 +13,7 @@ const (
 	envVarIssueTitle                         string = "INPUT_ISSUE-TITLE"
 	envVarIssueBody                          string = "INPUT_ISSUE-BODY"
 	envVarExcludeWorkflowInitiatorAsApprover string = "INPUT_EXCLUDE-WORKFLOW-INITIATOR-AS-APPROVER"
+	envVarPollInterval                       string = "INPUT_POLL-INTERVAL"
 )
 
 var (
