@@ -1,3 +1,7 @@
+
+[こちらのPR](https://github.com/trstringer/manual-approval/pull/74#issuecomment-1419317804)がpublishされないのでforkしました
+
+
 # Manual Workflow Approval
 
 [![ci](https://github.com/trstringer/manual-approval/actions/workflows/ci.yaml/badge.svg)](https://github.com/trstringer/manual-approval/actions/workflows/ci.yaml)
@@ -112,7 +116,7 @@ To test out your code in an action, you need to build the image and push it to a
 Build the image:
 
 ```
-$ VERSION=1.7.1-rc.1 make IMAGE_REPO=ghcr.io/trstringer/manual-approval-test build
+$ VERSION=1.7.1-rc.1 make IMAGE_REPO=ghcr.io/trstringer/manual-approval build
 ```
 
 *Note: The image version can be whatever you want, as this image wouldn't be pushed to production. It is only for testing.*
@@ -120,13 +124,13 @@ $ VERSION=1.7.1-rc.1 make IMAGE_REPO=ghcr.io/trstringer/manual-approval-test bui
 Push the image to your container registry:
 
 ```
-$ VERSION=1.7.1-rc.1 make IMAGE_REPO=ghcr.io/trstringer/manual-approval-test push
+$ VERSION=1.7.1-rc.1 make IMAGE_REPO=ghcr.io/trstringer/manual-approval push
 ```
 
 To test out the image you will need to modify `action.yaml` so that it points to your new image that you're testing:
 
 ```yaml
-  image: docker://ghcr.io/trstringer/manual-approval-test:1.7.0-rc.1
+  image: docker://ghcr.io/trstringer/manual-approval:1.7.0-rc.1
 ```
 
 Then to test out the image, run a workflow specifying your dev branch:

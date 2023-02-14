@@ -1,4 +1,4 @@
-IMAGE_REPO=ghcr.io/trstringer/manual-approval
+IMAGE_REPO=ghcr.io/shotaogasawara/manual-approval
 
 .PHONY: build
 build:
