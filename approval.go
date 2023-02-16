@@ -41,7 +41,7 @@ func newApprovalEnvironment(client *github.Client, repoFullName, repoOwner strin
 		minimumApprovals: minimumApprovals,
 		issueTitle:       issueTitle,
 		issueBody:        issueBody,
-		pollInterval:     pollInterval
+		pollInterval:     pollInterval,
 	}, nil
 }
 
