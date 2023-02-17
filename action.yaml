@@ -22,6 +22,12 @@ inputs:
   exclude-workflow-initiator-as-approver:
     description: Whether or not to filter out the user who initiated the workflow as an approver if they are in the approvers list
     default: false
+  additional-approved-words:
+    description: Comma separated list of words that can be used to approve beyond the defaults.
+    default: ''
+  additional-denied-words:
+    description: Comma separated list of words that can be used to deny beyond the defaults.
+    default: ''
 runs:
   using: docker
   image: docker://ghcr.io/trstringer/manual-approval:1.8.0
