@@ -32,8 +32,8 @@ inputs:
     description: Issue labels
     required: false
   additional-issue-body-file:
-    description: The custom body for the issue using file as preview
+    description: The custom body for the issue to show file preview
     required: false
 runs:
   using: docker
-  image: docker://docker.io/reynandaptr/manual-approval:1.9.2
+  image: docker://ghcr.io/trstringer/manual-approval:1.9.0
