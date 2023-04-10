@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"regexp"
 	"strings"
@@ -10,21 +11,22 @@ import (
 )
 
 type approvalEnvironment struct {
-	client              *github.Client
-	repoFullName        string
-	repo                string
-	repoOwner           string
-	runID               int
-	approvalIssue       *github.Issue
-	approvalIssueNumber int
-	issueTitle          string
-	issueBody           string
-	issueApprovers      []string
-	minimumApprovals    int
-	labels              []string
+	client               *github.Client
+	repoFullName         string
+	repo                 string
+	repoOwner            string
+	runID                int
+	approvalIssue        *github.Issue
+	approvalIssueNumber  int
+	issueTitle           string
+	issueBody            string
+	issueApprovers       []string
+	minimumApprovals     int
+	labels               []string
+	issueBodyFilePreview string
 }
 
-func newApprovalEnvironment(client *github.Client, repoFullName, repoOwner string, runID int, approvers []string, minimumApprovals int, issueTitle, issueBody string, labels []string) (*approvalEnvironment, error) {
+func newApprovalEnvironment(client *github.Client, repoFullName, repoOwner string, runID int, approvers []string, minimumApprovals int, issueTitle, issueBody string, labels []string, issueBodyFilePreview string) (*approvalEnvironment, error) {
 	repoOwnerAndName := strings.Split(repoFullName, "/")
 	if len(repoOwnerAndName) != 2 {
 		return nil, fmt.Errorf("repo owner and name in unexpected format: %s", repoFullName)
@@ -32,16 +34,17 @@ func newApprovalEnvironment(client *github.Client, repoFullName, repoOwner strin
 	repo := repoOwnerAndName[1]
 
 	return &approvalEnvironment{
-		client:           client,
-		repoFullName:     repoFullName,
-		repo:             repo,
-		repoOwner:        repoOwner,
-		runID:            runID,
-		issueApprovers:   approvers,
-		minimumApprovals: minimumApprovals,
-		issueTitle:       issueTitle,
-		issueBody:        issueBody,
-		labels:           labels,
+		client:               client,
+		repoFullName:         repoFullName,
+		repo:                 repo,
+		repoOwner:            repoOwner,
+		runID:                runID,
+		issueApprovers:       approvers,
+		minimumApprovals:     minimumApprovals,
+		issueTitle:           issueTitle,
+		issueBody:            issueBody,
+		labels:               labels,
+		issueBodyFilePreview: issueBodyFilePreview,
 	}, nil
 }
 
@@ -67,6 +70,22 @@ Respond %s to continue workflow or %s to cancel.`,
 		formatAcceptedWords(approvedWords),
 		formatAcceptedWords(deniedWords),
 	)
+
+	if a.issueBodyFilePreview != "" {
+		s := strings.Split(a.issueBodyFilePreview, ".")
+		if len(s) == 2 {
+			ext := s[1]
+			content, err := base64.StdEncoding.DecodeString(s[0])
+			if err != nil {
+				fmt.Printf("%s\n", err.Error())
+			} else {
+				issueBody = fmt.Sprintf(`%s%s
+%s
+%s
+%s`, "```", ext, string(content), "````", issueBody)
+			}
+		}
+	}
 
 	if a.issueBody != "" {
 		issueBody = fmt.Sprintf("%s\n\n%s", a.issueBody, issueBody)

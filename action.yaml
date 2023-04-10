@@ -31,6 +31,9 @@ inputs:
   labels:
     description: Issue labels
     required: false
+  additional-issue-body-file:
+    description: The custom body for the issue using file as preview
+    required: false
 runs:
   using: docker
-  image: docker://docker.io/reynandaptr/manual-approval:1.9.1
+  image: docker://docker.io/reynandaptr/manual-approval:1.9.2
