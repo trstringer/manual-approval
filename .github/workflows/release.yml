@@ -52,7 +52,7 @@ jobs:
         uses: mathieudutour/github-tag-action@v6.1
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          default_bump: ${{ github.event.inputs.message }}
+          default_bump: ${{ github.event.inputs.bump-type }}
       - name: Build Release Container
         env:
           VERSION: ${{ steps.tag_version.outputs.new_version }}
