@@ -32,13 +32,24 @@ steps:
       approvers: user1,user2,org-team1
       minimum-approvals: 1
       issue-title: "Deploying v1.3.5 to prod from staging"
+      issue-body: "Please approve or deny the deployment of version v1.3.5."
       exclude-workflow-initiator-as-approver: false
+      additional-approved-words: ''
+      additional-denied-words: ''
 ```
 
 - `approvers` is a comma-delimited list of all required approvers. An approver can either be a user or an org team. (*Note: Required approvers must have the ability to be set as approvers in the repository. If you add an approver that doesn't have this permission then you would receive an HTTP/402 Validation Failed error when running this action*)
 - `minimum-approvals` is an integer that sets the minimum number of approvals required to progress the workflow. Defaults to ALL approvers.
 - `issue-title` is a string that will be appended to the title of the issue.
+- `issue-body` is a string that will be prepended to the body of the issue.
 - `exclude-workflow-initiator-as-approver` is a boolean that indicates if the workflow initiator (determined by the `GITHUB_ACTOR` environment variable) should be filtered from the final list of approvers. This is optional and defaults to `false`. Set this to `true` to prevent users in the `approvers` list from being able to self-approve workflows.
+- `additional-approved-words` is a comma separated list of strings to expand the dictionary of words that indicate approval. This is optional and defaults to an empty string.
+- `additional-denied-words` is a comma separated list of strings to expand the dictionary of words that indicate denial. This is optional and defaults to an empty string.
+
+### Using Custom Words
+
+GitHub has a rich library of emojis, and these all work in additional approved words or denied words.  Some values GitHub will store in their text version - i.e. `:shipit:`. Other emojis, GitHub will store in their unicode emoji form, like ✅.
+For a seamless experience, it is recommended that you add the custom words to a GitHub comment, and then copy it back out of the comment into your actions configuration yaml.
 
 ## Org team approver
 
