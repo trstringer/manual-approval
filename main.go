@@ -197,12 +197,17 @@ func main() {
 	signal.Notify(killSignalChannel, os.Interrupt)
 
 	commentLoopChannel := newCommentLoopChannel(ctx, apprv, client)
+	noFailOnApprovals := os.Getenv(envVarNoFailOnApprovals)
 
 	select {
-	case exitCode := <-commentLoopChannel:
-		os.Exit(exitCode)
-	case <-killSignalChannel:
-		handleInterrupt(ctx, client, apprv)
-		os.Exit(1)
+		case exitCode := <-commentLoopChannel:
+			if noFailOnApprovals == "true" {
+				fmt.Println("NO_FAIL_ON_APPROVALS set to true. Exiting with status code 0.")
+				os.Exit(0)
+			}
+			os.Exit(exitCode)
+		case <-killSignalChannel:
+			handleInterrupt(ctx, client, apprv)
+			os.Exit(1)
 	}
 }

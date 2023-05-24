@@ -28,6 +28,9 @@ inputs:
   additional-denied-words:
     description: Comma separated list of words that can be used to deny beyond the defaults.
     default: ''
+  no-fail-on-approvals:
+    description: Whether or not to fail with an exit code = 1 if approval conditions are not met
+    default: false
 runs:
   using: docker
   image: docker://ghcr.io/trstringer/manual-approval:1.9.0
