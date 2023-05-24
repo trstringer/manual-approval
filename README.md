@@ -1,6 +1,6 @@
 # Manual Workflow Approval
 
-[![ci](https://github.com/trstringer/manual-approval/actions/workflows/ci.yaml/badge.svg)](https://github.com/trstringer/manual-approval/actions/workflows/ci.yaml)
+[![ci](https://github.com/songfinch/manual-approval/actions/workflows/ci.yaml/badge.svg)](https://github.com/songfinch/manual-approval/actions/workflows/ci.yaml)
 
 Pause a GitHub Actions workflow and require manual approval from one or more approvers before continuing.
 
@@ -26,7 +26,7 @@ In all cases, `manual-approval` will close the initial GitHub issue.
 
 ```yaml
 steps:
-  - uses: trstringer/manual-approval@v1
+  - uses: songfinch/manual-approval@v1
     with:
       secret: ${{ github.TOKEN }}
       approvers: user1,user2,org-team1
@@ -71,7 +71,7 @@ jobs:
           app_id: ${{ secrets.APP_ID }}
           private_key: ${{ secrets.APP_PRIVATE_KEY }}
       - name: Wait for approval
-        uses: trstringer/manual-approval@v1
+        uses: songfinch/manual-approval@v1
         with:
           secret: ${{ steps.generate_token.outputs.token }}
           approvers: myteam
@@ -86,7 +86,7 @@ For instance, if you want your manual approval step to timeout after an hour you
 
 ```yaml
 steps:
-  - uses: trstringer/manual-approval@v1
+  - uses: songfinch/manual-approval@v1
     timeout-minutes: 60
     ...
 ```
@@ -115,13 +115,13 @@ For more information on permissions, please look at the [GitHub documentation](h
 To test out your code in an action, you need to build the image and push it to a different container registry repository. For instance, if I want to test some code I won't build the image with the main image repository. Prior to this, comment out the label binding the image to a repo:
 
 ```dockerfile
-# LABEL org.opencontainers.image.source https://github.com/trstringer/manual-approval
+# LABEL org.opencontainers.image.source https://github.com/songfinch/manual-approval
 ```
 
 Build the image:
 
 ```
-$ VERSION=1.7.1-rc.1 make IMAGE_REPO=ghcr.io/trstringer/manual-approval-test build
+$ VERSION=1.7.1-rc.1 make IMAGE_REPO=ghcr.io/songfinch/manual-approval-test build
 ```
 
 *Note: The image version can be whatever you want, as this image wouldn't be pushed to production. It is only for testing.*
@@ -129,13 +129,13 @@ $ VERSION=1.7.1-rc.1 make IMAGE_REPO=ghcr.io/trstringer/manual-approval-test bui
 Push the image to your container registry:
 
 ```
-$ VERSION=1.7.1-rc.1 make IMAGE_REPO=ghcr.io/trstringer/manual-approval-test push
+$ VERSION=1.7.1-rc.1 make IMAGE_REPO=ghcr.io/songfinch/manual-approval-test push
 ```
 
 To test out the image you will need to modify `action.yaml` so that it points to your new image that you're testing:
 
 ```yaml
-  image: docker://ghcr.io/trstringer/manual-approval-test:1.7.0-rc.1
+  image: docker://ghcr.io/songfinch/manual-approval-test:1.7.0-rc.1
 ```
 
 Then to test out the image, run a workflow specifying your dev branch:
@@ -145,7 +145,7 @@ Then to test out the image, run a workflow specifying your dev branch:
   uses: your-github-user/manual-approval@your-dev-branch
   with:
     secret: ${{ secrets.GITHUB_TOKEN }}
-    approvers: trstringer
+    approvers: songfinch
 ```
 
 For `uses`, this should point to your repo and dev branch.
