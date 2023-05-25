@@ -57,10 +57,10 @@ jobs:
         env:
           VERSION: ${{ steps.tag_version.outputs.new_version }}
         run: make buildx
-      - name: Move Generic Tag Version
 
   advance-generic-tag:
     runs-on: ubuntu-latest
+    name: Move Generic Tag Version
     needs: [multi-arch-build-and-push]
     steps:
       - uses: actions/checkout@v3
