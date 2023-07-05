@@ -33,4 +33,4 @@ inputs:
     required: false
 runs:
   using: docker
-  image: docker://ghcr.io/trstringer/manual-approval:1.9.0
+  image: docker://us-west1-docker.pkg.dev/dl-dapper/dev/github/manual-approval:1.10.0

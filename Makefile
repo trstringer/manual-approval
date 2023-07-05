@@ -1,4 +1,4 @@
-IMAGE_REPO=ghcr.io/trstringer/manual-approval
+IMAGE_REPO=us-west1-docker.pkg.dev/dl-dapper/dev/github/manual-approval
 
 .PHONY: build
 build:
