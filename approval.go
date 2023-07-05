@@ -24,7 +24,15 @@ type approvalEnvironment struct {
 	labels              []string
 }
 
-func newApprovalEnvironment(client *github.Client, repoFullName, repoOwner string, runID int, approvers []string, minimumApprovals int, issueTitle, issueBody string, labels []string) (*approvalEnvironment, error) {
+func newApprovalEnvironment(
+	client *github.Client,
+	repoFullName, repoOwner string,
+	runID int,
+	approvers []string,
+	minimumApprovals int,
+	issueTitle, issueBody string,
+	labels []string,
+) (*approvalEnvironment, error) {
 	repoOwnerAndName := strings.Split(repoFullName, "/")
 	if len(repoOwnerAndName) != 2 {
 		return nil, fmt.Errorf("repo owner and name in unexpected format: %s", repoFullName)
@@ -74,7 +82,7 @@ Respond %s to continue workflow or %s to cancel.`,
 
 	var err error
 	fmt.Printf(
-		"Creating issue in repo %s/%s with the following content:\nTitle: %s\nApprovers: %sLabels: %s\nBody:\n%s\n",
+		"Creating issue in repo %s/%s with the following content:\nTitle: %s\nApprovers: %s\nLabels: %s\nBody:\n%s\n",
 		a.repoOwner,
 		a.repo,
 		issueTitle,
