@@ -28,6 +28,9 @@ inputs:
   additional-denied-words:
     description: Comma separated list of words that can be used to deny beyond the defaults.
     default: ''
+  labels:
+    description: Comma separated issue labels
+    required: false
 runs:
   using: docker
   image: docker://ghcr.io/trstringer/manual-approval:1.9.0

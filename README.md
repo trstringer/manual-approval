@@ -36,6 +36,7 @@ steps:
       exclude-workflow-initiator-as-approver: false
       additional-approved-words: ''
       additional-denied-words: ''
+      labels: ''
 ```
 
 - `approvers` is a comma-delimited list of all required approvers. An approver can either be a user or an org team. (*Note: Required approvers must have the ability to be set as approvers in the repository. If you add an approver that doesn't have this permission then you would receive an HTTP/402 Validation Failed error when running this action*)
