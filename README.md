@@ -36,6 +36,7 @@ steps:
       exclude-workflow-initiator-as-approver: false
       additional-approved-words: ''
       additional-denied-words: ''
+      labels: ''
 ```
 
 - `approvers` is a comma-delimited list of all required approvers. An approver can either be a user or an org team. (*Note: Required approvers must have the ability to be set as approvers in the repository. If you add an approver that doesn't have this permission then you would receive an HTTP/402 Validation Failed error when running this action*)
@@ -45,6 +46,7 @@ steps:
 - `exclude-workflow-initiator-as-approver` is a boolean that indicates if the workflow initiator (determined by the `GITHUB_ACTOR` environment variable) should be filtered from the final list of approvers. This is optional and defaults to `false`. Set this to `true` to prevent users in the `approvers` list from being able to self-approve workflows.
 - `additional-approved-words` is a comma separated list of strings to expand the dictionary of words that indicate approval. This is optional and defaults to an empty string.
 - `additional-denied-words` is a comma separated list of strings to expand the dictionary of words that indicate denial. This is optional and defaults to an empty string.
+- `labels` is a comma separated list of strings to set labels of issue. This is optional and defaults to an empty string.
 
 ### Using Custom Words
 
