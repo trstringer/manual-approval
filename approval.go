@@ -89,7 +89,7 @@ Respond %s to continue workflow or %s to cancel.`,
 	}
 	a.approvalIssueNumber = a.approvalIssue.GetNumber()
 
-	fmt.Printf("Issue created: %s\n", a.approvalIssue.GetURL())
+	fmt.Printf("Issue created: %s\n", a.approvalIssue.GetHTMLURL())
 	return nil
 }
 
