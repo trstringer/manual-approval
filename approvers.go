@@ -20,7 +20,10 @@ func retrieveApprovers(client *github.Client, repoOwner string) ([]string, []str
 
 	approvers := []string{}
 	requiredApproversRaw := os.Getenv(envVarApprovers)
-	requiredApprovers := strings.Split(requiredApproversRaw, ",")
+	requiredApprovers := []string{}
+	if requiredApproversRaw != "" {
+		requiredApprovers = strings.Split(requiredApproversRaw, ",")
+	}
 
 	minimumApprovalsRaw := os.Getenv(envVarMinimumApprovals)
 	minimumApprovals := len(approvers)
