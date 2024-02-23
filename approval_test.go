@@ -18,6 +18,7 @@ func TestApprovalFromComments(t *testing.T) {
 		name             string
 		comments         []*github.IssueComment
 		approvers        []string
+		disallowedUsers  []string
 		minimumApprovals int
 		expectedStatus   approvalStatus
 	}{
@@ -162,7 +163,7 @@ func TestApprovalFromComments(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			actual, err := approvalFromComments(testCase.comments, testCase.approvers, testCase.minimumApprovals)
+			actual, err := approvalFromComments(testCase.comments, testCase.approvers, testCase.minimumApprovals, testCase.disallowedUsers)
 			if err != nil {
 				t.Fatalf("error getting approval from comments: %v", err)
 			}

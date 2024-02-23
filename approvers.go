@@ -10,17 +10,34 @@ import (
 	"github.com/google/go-github/v43/github"
 )
 
-func retrieveApprovers(client *github.Client, repoOwner string) ([]string, error) {
+func retrieveApprovers(client *github.Client, repoOwner string) ([]string, []string, error) {
 	workflowInitiator := os.Getenv(envVarWorkflowInitiator)
 	shouldExcludeWorkflowInitiatorRaw := os.Getenv(envVarExcludeWorkflowInitiatorAsApprover)
 	shouldExcludeWorkflowInitiator, parseBoolErr := strconv.ParseBool(shouldExcludeWorkflowInitiatorRaw)
 	if parseBoolErr != nil {
-		return nil, fmt.Errorf("error parsing exclude-workflow-initiator-as-approver flag: %w", parseBoolErr)
+		return nil, nil, fmt.Errorf("error parsing exclude-workflow-initiator-as-approver flag: %w", parseBoolErr)
 	}
 
 	approvers := []string{}
 	requiredApproversRaw := os.Getenv(envVarApprovers)
-	requiredApprovers := strings.Split(requiredApproversRaw, ",")
+	requiredApprovers := []string{}
+	if requiredApproversRaw != "" {
+		requiredApprovers = strings.Split(requiredApproversRaw, ",")
+	}
+
+	minimumApprovalsRaw := os.Getenv(envVarMinimumApprovals)
+	minimumApprovals := len(approvers)
+
+	var disallowedUsers []string
+	if shouldExcludeWorkflowInitiator {
+		disallowedUsers = []string{workflowInitiator}
+	} else {
+		disallowedUsers = []string{}
+	}
+
+	if len(requiredApprovers) == 0 {
+		return []string{}, disallowedUsers, nil
+	}
 
 	for i := range requiredApprovers {
 		requiredApprovers[i] = strings.TrimSpace(requiredApprovers[i])
@@ -39,21 +56,19 @@ func retrieveApprovers(client *github.Client, repoOwner string) ([]string, error
 
 	approvers = deduplicateUsers(approvers)
 
-	minimumApprovalsRaw := os.Getenv(envVarMinimumApprovals)
-	minimumApprovals := len(approvers)
 	var err error
 	if minimumApprovalsRaw != "" {
 		minimumApprovals, err = strconv.Atoi(minimumApprovalsRaw)
 		if err != nil {
-			return nil, fmt.Errorf("error parsing minimum number of approvals: %w", err)
+			return nil, nil, fmt.Errorf("error parsing minimum number of approvals: %w", err)
 		}
 	}
 
 	if minimumApprovals > len(approvers) {
-		return nil, fmt.Errorf("error: minimum required approvals (%d) is greater than the total number of approvers (%d)", minimumApprovals, len(approvers))
+		return nil, nil, fmt.Errorf("error: minimum required approvals (%d) is greater than the total number of approvers (%d)", minimumApprovals, len(approvers))
 	}
 
-	return approvers, nil
+	return approvers, disallowedUsers, nil
 }
 
 func expandGroupFromUser(client *github.Client, org, userOrTeam string, workflowInitiator string, shouldExcludeWorkflowInitiator bool) []string {
