@@ -1,6 +1,11 @@
 # Manual Workflow Approval
 
-[![ci](https://github.com/trstringer/manual-approval/actions/workflows/ci.yaml/badge.svg)](https://github.com/trstringer/manual-approval/actions/workflows/ci.yaml)
+This is a fork of [trstringer/manual-approval](https://github.com/trstringer/manual-approval) with the following changes:
+
+- Leaving the approvers field blank allows anyone with access to the repo to approve.
+- Golang lib updates.
+
+[![ci](https://github.com/Delphia/manual-approval/actions/workflows/ci.yaml/badge.svg)](https://github.com/Delphia/manual-approval/actions/workflows/ci.yaml)
 
 Pause a GitHub Actions workflow and require manual approval from one or more approvers before continuing.
 
@@ -77,6 +82,10 @@ jobs:
           approvers: myteam
           minimum-approvals: 1
 ```
+
+## Allow anyone to approve
+
+Leave the approvers field blank to allow anyone to approve.
 
 ## Timeout
 
