@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/google/go-github/v43/github"
+	"github.com/google/go-github/v61/github"
 )
 
 func retrieveApprovers(client *github.Client, repoOwner string) ([]string, []string, error) {

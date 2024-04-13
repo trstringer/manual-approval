@@ -3,7 +3,7 @@ package main
 import (
 	"testing"
 
-	"github.com/google/go-github/v43/github"
+	"github.com/google/go-github/v61/github"
 )
 
 func TestApprovalFromComments(t *testing.T) {
