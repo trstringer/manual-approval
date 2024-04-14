@@ -1,4 +1,4 @@
-module github.com/trstringer/manual-approval
+module github.com/Delphia/manual-approval
 
 go 1.22
 
