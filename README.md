@@ -3,7 +3,7 @@
 This is a fork of [trstringer/manual-approval](https://github.com/trstringer/manual-approval) with the following changes:
 
 - Leaving the approvers field blank allows anyone with access to the repo to approve.
-- Golang lib updates.
+- Golang version and library updates.
 
 [![ci](https://github.com/Delphia/manual-approval/actions/workflows/ci.yaml/badge.svg)](https://github.com/Delphia/manual-approval/actions/workflows/ci.yaml)
 
@@ -16,8 +16,8 @@ This is a very common feature for a deployment or release pipeline, and while [t
 The way this action works is the following:
 
 1. Workflow comes to the `manual-approval` action.
-1. `manual-approval` will create an issue in the containing repository and assign it to the `approvers`.
-1. If and once all approvers respond with an approved keyword, the workflow will continue.
+1. `manual-approval` will create an issue in the containing repository and assign it to the `approvers` (if there are any).
+1. If and once all required approvers respond with an approved keyword, the workflow will continue.
 1. If any of the approvers responds with a denied keyword, then the workflow will exit with a failed status.
 
 * Approval keywords - "approve", "approved", "lgtm", "yes"
@@ -31,7 +31,7 @@ In all cases, `manual-approval` will close the initial GitHub issue.
 
 ```yaml
 steps:
-  - uses: trstringer/manual-approval@v1
+  - uses: Delphia/manual-approval@v1
     with:
       secret: ${{ github.TOKEN }}
       approvers: user1,user2,org-team1
@@ -76,7 +76,7 @@ jobs:
           app_id: ${{ secrets.APP_ID }}
           private_key: ${{ secrets.APP_PRIVATE_KEY }}
       - name: Wait for approval
-        uses: trstringer/manual-approval@v1
+        uses: Delphia/manual-approval@v1
         with:
           secret: ${{ steps.generate_token.outputs.token }}
           approvers: myteam
@@ -95,7 +95,7 @@ For instance, if you want your manual approval step to timeout after an hour you
 
 ```yaml
 steps:
-  - uses: trstringer/manual-approval@v1
+  - uses: Delphia/manual-approval@v1
     timeout-minutes: 60
     ...
 ```
@@ -121,16 +121,12 @@ For more information on permissions, please look at the [GitHub documentation](h
 
 ### Running test code
 
-To test out your code in an action, you need to build the image and push it to a different container registry repository. For instance, if I want to test some code I won't build the image with the main image repository. Prior to this, comment out the label binding the image to a repo:
-
-```dockerfile
-# LABEL org.opencontainers.image.source https://github.com/trstringer/manual-approval
-```
+To test out your code in an action, you need to build the image and push it to a different container registry repository. For instance, if I want to test some code I won't build the image with the main image repository.
 
 Build the image:
 
 ```
-$ VERSION=1.7.1-rc.1 make IMAGE_REPO=ghcr.io/trstringer/manual-approval-test build
+$ VERSION=1.7.1-rc.1 make IMAGE_REPO=ghcr.io/Delphia/manual-approval-test build
 ```
 
 *Note: The image version can be whatever you want, as this image wouldn't be pushed to production. It is only for testing.*
@@ -138,13 +134,13 @@ $ VERSION=1.7.1-rc.1 make IMAGE_REPO=ghcr.io/trstringer/manual-approval-test bui
 Push the image to your container registry:
 
 ```
-$ VERSION=1.7.1-rc.1 make IMAGE_REPO=ghcr.io/trstringer/manual-approval-test push
+$ VERSION=1.7.1-rc.1 make IMAGE_REPO=ghcr.io/Delphia/manual-approval-test push
 ```
 
 To test out the image you will need to modify `action.yaml` so that it points to your new image that you're testing:
 
 ```yaml
-  image: docker://ghcr.io/trstringer/manual-approval-test:1.7.0-rc.1
+  image: docker://ghcr.io/Delphia/manual-approval-test:1.7.0-rc.1
 ```
 
 Then to test out the image, run a workflow specifying your dev branch:
