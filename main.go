@@ -41,7 +41,7 @@ func newCommentLoopChannel(ctx context.Context, apprv *approvalEnvironment, clie
 				close(channel)
 			}
 
-			approved, err := approvalFromComments(comments, apprv.issueApprovers, apprv.minimumApprovals)
+			approved, err := approvalFromComments(comments, apprv.issueApprovers, apprv.minimumApprovals, apprv.disallowedUsers)
 			if err != nil {
 				fmt.Printf("error getting approval from comments: %v\n", err)
 				channel <- 1
@@ -133,10 +133,6 @@ func validateInput() error {
 		missingEnvVars = append(missingEnvVars, envVarToken)
 	}
 
-	if os.Getenv(envVarApprovers) == "" {
-		missingEnvVars = append(missingEnvVars, envVarApprovers)
-	}
-
 	if len(missingEnvVars) > 0 {
 		return fmt.Errorf("missing env vars: %v", missingEnvVars)
 	}
@@ -164,7 +160,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	approvers, err := retrieveApprovers(client, repoOwner)
+	approvers, disallowedUsers, err := retrieveApprovers(client, repoOwner)
 	if err != nil {
 		fmt.Printf("error retrieving approvers: %v\n", err)
 		os.Exit(1)
@@ -181,7 +177,7 @@ func main() {
 			os.Exit(1)
 		}
 	}
-	apprv, err := newApprovalEnvironment(client, repoFullName, repoOwner, runID, approvers, minimumApprovals, issueTitle, issueBody)
+	apprv, err := newApprovalEnvironment(client, repoFullName, repoOwner, runID, approvers, minimumApprovals, issueTitle, issueBody, disallowedUsers)
 	if err != nil {
 		fmt.Printf("error creating approval environment: %v\n", err)
 		os.Exit(1)
