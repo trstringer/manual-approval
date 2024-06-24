@@ -31,6 +31,12 @@ inputs:
   additional-denied-words:
     description: Comma separated list of words that can be used to deny beyond the defaults.
     default: ''
+  labels:
+    description: Issue labels
+    required: false
+  additional-issue-body-file:
+    description: The custom body for the issue to show file preview
+    required: false
 runs:
   using: docker
   image: docker://ghcr.io/trstringer/manual-approval:1.9.1

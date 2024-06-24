@@ -21,6 +21,8 @@ const (
 	envVarExcludeWorkflowInitiatorAsApprover string = "INPUT_EXCLUDE-WORKFLOW-INITIATOR-AS-APPROVER"
 	envVarAdditionalApprovedWords            string = "INPUT_ADDITIONAL-APPROVED-WORDS"
 	envVarAdditionalDeniedWords              string = "INPUT_ADDITIONAL-DENIED-WORDS"
+	envVarLabels                             string = "INPUT_LABELS"
+	envVarAdditionalIssueBodyFile            string = "INPUT_ADDITIONAL-ISSUE-BODY-FILE"
 )
 
 var (
