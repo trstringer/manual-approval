@@ -25,7 +25,7 @@ inputs:
   exclude-workflow-initiator-as-approver:
     description: Whether or not to filter out the user who initiated the workflow as an approver if they are in the approvers list
     default: false
-  lables:
+  labels:
     description: Labels to add to the issue
     required: false
   additional-approved-words:
