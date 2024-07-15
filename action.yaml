@@ -1,4 +1,4 @@
-name: RADICL Manual Workflow Approval
+name: Manual Workflow Approval
 description: Pause a workflow and get user approval to continue
 branding:
   icon: pause
@@ -22,12 +22,12 @@ inputs:
   issue-body:
     description: The custom body for the issue
     required: false
+  issue-labels:
+    description: Labels to add to the issue
+    required: false
   exclude-workflow-initiator-as-approver:
     description: Whether or not to filter out the user who initiated the workflow as an approver if they are in the approvers list
     default: false
-  labels:
-    description: Labels to add to the issue
-    required: false
   additional-approved-words:
     description: Comma separated list of words that can be used to approve beyond the defaults.
     default: ''
@@ -36,4 +36,4 @@ inputs:
     default: ''
 runs:
   using: docker
-  image: docker://ghcr.io/radicldefense/rad-manual-approval:1.10
+  image: docker://ghcr.io/trstringer/manual-approval:1.9.1
