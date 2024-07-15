@@ -1,4 +1,4 @@
-IMAGE_REPO=ghcr.io/radicldefense/manual-approval
+IMAGE_REPO=ghcr.io/radicldefense/rad-manual-approval
 
 .PHONY: build
 build:

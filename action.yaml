@@ -1,4 +1,4 @@
-name: Manual Workflow Approval
+name: RADICL Manual Workflow Approval
 description: Pause a workflow and get user approval to continue
 branding:
   icon: pause
@@ -36,4 +36,4 @@ inputs:
     default: ''
 runs:
   using: docker
-  image: docker://ghcr.io/radicldefense/manual-approval:1.10
+  image: docker://ghcr.io/radicldefense/rad-manual-approval:1.10
