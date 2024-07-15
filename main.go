@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/google/go-github/v43/github"
@@ -181,7 +182,14 @@ func main() {
 			os.Exit(1)
 		}
 	}
-	apprv, err := newApprovalEnvironment(client, repoFullName, repoOwner, runID, approvers, minimumApprovals, issueTitle, issueBody)
+
+	labelsRaw := os.Getenv(envVarLabels)
+	labels := []string{}
+	if labelsRaw != "" {
+		labels = strings.Split(labelsRaw, ",")
+	}
+
+	apprv, err := newApprovalEnvironment(client, repoFullName, repoOwner, runID, approvers, minimumApprovals, issueTitle, issueBody, labels)
 	if err != nil {
 		fmt.Printf("error creating approval environment: %v\n", err)
 		os.Exit(1)
