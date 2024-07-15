@@ -1,4 +1,4 @@
-module github.com/trstringer/manual-approval
+module github.com/radicldefense/manual-approval
 
 go 1.17
 
