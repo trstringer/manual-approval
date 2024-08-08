@@ -31,6 +31,11 @@ inputs:
   additional-denied-words:
     description: Comma separated list of words that can be used to deny beyond the defaults.
     default: ''
+outputs:
+  issue-number:
+    description: The number of the issued created
+  issue-url:
+    description: The URL of the issued created
 runs:
   using: docker
   image: docker://ghcr.io/trstringer/manual-approval:1.9.1

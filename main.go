@@ -193,6 +193,12 @@ func main() {
 		os.Exit(1)
 	}
 
+	_, err = apprv.saveOutput(ctx)
+	if err != nil {
+		fmt.Printf("error saving output: %v", err)
+		os.Exit(1)
+	}
+
 	killSignalChannel := make(chan os.Signal, 1)
 	signal.Notify(killSignalChannel, os.Interrupt)
 
