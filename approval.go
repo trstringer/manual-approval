@@ -104,9 +104,15 @@ func (a *approvalEnvironment) saveOutput(ctx context.Context) (bool, error) {
 		return false, nil
 	}
 
-	output := []byte(fmt.Sprintf("issue-number=%v\nissue-url=%v\n", a.approvalIssueNumber, a.approvalIssue.GetURL()))
-	err := os.WriteFile(outputFile, output, 0644)
+	output := fmt.Sprintf("issue-number=%v\nissue-url=%v\n", a.approvalIssueNumber, a.approvalIssue.GetURL())
+	f, err := os.OpenFile(outputFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+
 	if err != nil {
+		return false, err
+	}
+	defer f.Close()
+
+	if _, err := f.WriteString(output); err != nil {
 		return false, err
 	}
 
