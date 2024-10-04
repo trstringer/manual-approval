@@ -22,6 +22,9 @@ inputs:
   issue-body:
     description: The custom body for the issue
     required: false
+  issue-body-file-path:
+    description: The file path to a custom body for the issue
+    required: false
   exclude-workflow-initiator-as-approver:
     description: Whether or not to filter out the user who initiated the workflow as an approver if they are in the approvers list
     default: false
