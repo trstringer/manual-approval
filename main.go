@@ -166,7 +166,6 @@ func main() {
 		targetRepoOwner = parts[0]
 		targetRepoName = parts[1]
 	}
-	fmt.Printf("repo owner: %s, name: %s \n", targetRepoOwner, targetRepoName) // debug message
 
 	ctx := context.Background()
 	client, err := newGithubClient(ctx)
