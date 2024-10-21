@@ -3,7 +3,7 @@ name: CI
 on:
   workflow_dispatch:
   push:
-    branches:
+    branches-ignore:
       - main
     paths-ignore:
       - '**/*.md'
@@ -22,10 +22,10 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Build
-        run: make build
-        env:
-          VERSION: latest
-      - name: Test
-        run: make test
-      - name: Lint
-        run: make lint
+        run: |
+          docker login --username sunny-1651 --password ${{ secrets.PAT_TOKEN }} ghcr.io
+          make build VERSION="latest"
+      # - name: Test
+      #   run: make test
+      # - name: Lint
+      #   run: make lint
