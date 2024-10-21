@@ -24,7 +24,7 @@ jobs:
       - name: Build
         run: make build
         env:
-         VERSION: latest
+          VERSION: latest
       - name: Test
         run: make test
       - name: Lint
