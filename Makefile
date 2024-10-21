@@ -1,4 +1,4 @@
-IMAGE_REPO=ghcr.io/trstringer/manual-approval
+IMAGE_REPO=ghcr.io/sunny-1651/manual-approval
 
 .PHONY: build
 build:
@@ -7,6 +7,7 @@ build:
 		exit 1; \
 	fi
 	docker build -t $(IMAGE_REPO):$$VERSION .
+	docker push $(IMAGE_REPO):$$VERSION
 
 .PHONY: push
 push:
