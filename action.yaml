@@ -33,4 +33,4 @@ inputs:
     default: ''
 runs:
   using: docker
-  image: docker://ghcr.io/sunny-1651/manual-approval:latest
+  image: docker://ghcr.io/trstringer/manual-approval:1.9.1
