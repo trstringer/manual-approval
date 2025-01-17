@@ -52,10 +52,10 @@ func (a approvalEnvironment) runURL() string {
 }
 
 func (a *approvalEnvironment) createApprovalIssue(ctx context.Context) error {
-	issueTitle := fmt.Sprintf("Manual approval required for workflow run %d", a.runID)
-
 	if a.issueTitle != "" {
-		issueTitle = fmt.Sprintf("%s: %s", issueTitle, a.issueTitle)
+		issueTitle = a.issueTitle
+	} else {
+		issueTitle = fmt.Sprintf("Manual approval required for workflow run %d", a.runID)
 	}
 
 	issueBody := fmt.Sprintf(`Workflow is pending manual review.
