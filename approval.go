@@ -52,6 +52,8 @@ func (a approvalEnvironment) runURL() string {
 }
 
 func (a *approvalEnvironment) createApprovalIssue(ctx context.Context) error {
+	var issueTitle string
+
 	if a.issueTitle != "" {
 		issueTitle = a.issueTitle
 	} else {
