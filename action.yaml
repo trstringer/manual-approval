@@ -13,9 +13,6 @@ inputs:
   minimum-approvals:
     description: Minimum number of approvals to progress workflow
     required: false
-  timeout-minutes:
-    description: Force timeout of your workflow pause
-    required: false
   issue-title:
     description: The custom subtitle for the issue
     required: false
@@ -31,6 +28,26 @@ inputs:
   additional-denied-words:
     description: Comma separated list of words that can be used to deny beyond the defaults.
     default: ''
+
 runs:
-  using: docker
-  image: docker://ghcr.io/saymine/gha-manual-approval:1.9.2
+  using: "composite"
+  steps:
+    - name: "setup: download binary"
+      shell: bash
+      run: |
+        curl -OL https://github.com/saymine/gha-manual-approval/releases/download/v1.9.2/manual-approval-x86_64-linux
+        chmod +x ./manual-approval-x86_64-linux
+        mv ./manual-approval-x86_64-linux /usr/local/bin/manual-approval
+
+    - name: "run: manual approval"
+      shell: bash
+      env:
+        INPUT_APPROVERS: "${{ inputs.approvers }}"
+        INPUT_SECRET: "${{ inputs.secret }}"
+        INPUT_MINIMUM-APPROVALS: "${{ inputs.minimum-approvals }}"
+        INPUT_ISSUE-TITLE: "${{ inputs.issue-title }}"
+        INPUT_ISSUE-BODY: "${{ inputs.issue-body }}"
+        INPUT_EXCLUDE-WORKFLOW-INITIATOR-AS-APPROVER: "${{ inputs.exclude-workflow-initiator-as-approver }}"
+        INPUT_ADDITIONAL-APPROVED-WORDS: "${{ inputs.additional-approved-words }}"
+        INPUT_ADDITIONAL-DENIED-WORDS: "${{ inputs.additional-denied-words }}"
+      run: /usr/local/bin/manual-approval
