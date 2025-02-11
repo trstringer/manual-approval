@@ -36,4 +36,5 @@ inputs:
     default: false
 runs:
   using: docker
-  image: docker://ghcr.io/trstringer/manual-approval:1.9.1
+  # image: docker://ghcr.io/trstringer/manual-approval:1.9.1
+  image: docker://lizziemac/manual-approval-test:1.8.0-rc3
