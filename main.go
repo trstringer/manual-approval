@@ -85,7 +85,7 @@ func newCommentLoopChannel(ctx context.Context, apprv *approvalEnvironment, clie
 			case approvalStatusDenied:
 				newState := "closed"
 				closeComment := "Request denied. Closing issue "
-				if !apprv.failOnDenial {
+				if apprv.failOnDenial == false {
 					closeComment += "but continuing"
 				} else {
 					closeComment += "and failing"
@@ -190,7 +190,15 @@ func main() {
 		os.Exit(1)
 	}
 
-	failOnDenial := os.Getenv(envVarFailOnDenial) == "true"
+	failOnDenial := true
+	failOnDenialRaw := os.Getenv(envVarFailOnDenial)
+	if failOnDenialRaw != "" {
+		failOnDenial, err = strconv.ParseBool(failOnDenialRaw)
+		if err != nil {
+			fmt.Printf("error parsing fail on denial: %v\n", err)
+			os.Exit(1)
+		}
+	}
 
 	issueTitle := os.Getenv(envVarIssueTitle)
 	issueBody := os.Getenv(envVarIssueBody)
@@ -224,7 +232,7 @@ func main() {
 	case exitCode := <-commentLoopChannel:
 		approvalStatus := ""
 
-		if (!failOnDenial && exitCode == 1) {
+		if (failOnDenial == false && exitCode == 1) {
 			approvalStatus = "denied"
 			exitCode = 0
 		} else if (exitCode == 1) {
