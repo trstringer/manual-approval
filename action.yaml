@@ -31,6 +31,9 @@ inputs:
   additional-denied-words:
     description: Comma separated list of words that can be used to deny beyond the defaults.
     default: ''
+  fail-on-denial:
+    description: Whether or not to fail the workflow if the approval is denied
+    default: false
 runs:
   using: docker
   image: docker://ghcr.io/trstringer/manual-approval:1.9.1

@@ -6,7 +6,7 @@ build:
 		echo "VERSION is required"; \
 		exit 1; \
 	fi
-	docker build -t $(IMAGE_REPO):$$VERSION .
+	docker build --platform $(TARGET_PLATFORM) -t $(IMAGE_REPO):$$VERSION .
 
 .PHONY: push
 push:
