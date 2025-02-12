@@ -33,9 +33,9 @@ inputs:
     default: ''
 outputs:
   issue-number:
-    description: The number of the issued created
+    description: The number of the issue created
   issue-url:
-    description: The URL of the issued created
+    description: The URL of the issue created
 runs:
   using: docker
   image: docker://ghcr.io/trstringer/manual-approval:1.9.1
