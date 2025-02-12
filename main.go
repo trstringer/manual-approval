@@ -193,6 +193,16 @@ func main() {
 		os.Exit(1)
 	}
 
+	outputs := map[string]string {
+		"issue-number": fmt.Sprintf("%d", a.approvalIssueNumber),
+		"issue-url": a.approvalIssue.GetURL()
+	}
+	_, err = apprv.saveOutputs(outputs)
+	if err != nil {
+		fmt.Printf("error saving output: %v", err)
+		os.Exit(1)
+	}
+
 	killSignalChannel := make(chan os.Signal, 1)
 	signal.Notify(killSignalChannel, os.Interrupt)
 

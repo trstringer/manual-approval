@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"os"
 	"regexp"
 	"strings"
 
@@ -95,6 +96,32 @@ Respond %s to continue workflow or %s to cancel.`,
 
 	fmt.Printf("Issue created: %s\n", a.approvalIssue.GetHTMLURL())
 	return nil
+}
+
+func (a *approvalEnvironment) saveOutputs(outputs map[string]string) (bool, error) {
+	outputFile := os.Getenv("GITHUB_OUTPUT")
+	if outputFile == "" {
+		return false, nil
+	}
+
+	f, err := os.OpenFile(outputFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+
+	if err != nil {
+		return false, err
+	}
+	defer f.Close()
+
+	var pairs []string
+
+	for key, value := range outputs {
+		pairs = append(pairs, fmt.Sprintf("%s=%s", key, value))
+	}
+
+	if _, err := f.WriteString(strings.Join(pairs, "\n")); err != nil {
+		return false, err
+	}
+
+	return true, nil
 }
 
 func approvalFromComments(comments []*github.IssueComment, approvers []string, minimumApprovals int) (approvalStatus, error) {
