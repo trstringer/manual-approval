@@ -98,13 +98,12 @@ Respond %s to continue workflow or %s to cancel.`,
 	return nil
 }
 
-func (a *approvalEnvironment) saveOutput(ctx context.Context) (bool, error) {
+func (a *approvalEnvironment) saveOutputs(outputs map[string]string) (bool, error) {
 	outputFile := os.Getenv("GITHUB_OUTPUT")
 	if outputFile == "" {
 		return false, nil
 	}
 
-	output := fmt.Sprintf("issue-number=%v\nissue-url=%v\n", a.approvalIssueNumber, a.approvalIssue.GetURL())
 	f, err := os.OpenFile(outputFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 
 	if err != nil {
@@ -112,7 +111,13 @@ func (a *approvalEnvironment) saveOutput(ctx context.Context) (bool, error) {
 	}
 	defer f.Close()
 
-	if _, err := f.WriteString(output); err != nil {
+	var pairs []string
+
+	for key, value := range outputs {
+		pairs = append(pairs, fmt.Sprintf("%s=%s", key, value))
+	}
+
+	if _, err := f.WriteString(strings.Join(pairs, "\n")); err != nil {
 		return false, err
 	}
 
