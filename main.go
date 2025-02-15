@@ -85,7 +85,7 @@ func newCommentLoopChannel(ctx context.Context, apprv *approvalEnvironment, clie
 			case approvalStatusDenied:
 				newState := "closed"
 				closeComment := "Request denied. Closing issue "
-				if apprv.failOnDenial == false {
+				if !apprv.failOnDenial {
 					closeComment += "but continuing"
 				} else {
 					closeComment += "and failing"
@@ -232,7 +232,7 @@ func main() {
 	case exitCode := <-commentLoopChannel:
 		approvalStatus := ""
 
-		if (failOnDenial == false && exitCode == 1) {
+		if (!failOnDenial && exitCode == 1) {
 			approvalStatus = "denied"
 			exitCode = 0
 		} else if (exitCode == 1) {
