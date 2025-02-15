@@ -23,6 +23,7 @@ type approvalEnvironment struct {
 	minimumApprovals    int
 	targetRepoOwner     string
 	targetRepoName      string
+	failOnDenial        bool
 }
 
 func newApprovalEnvironment(client *github.Client, repoFullName, repoOwner string, runID int, approvers []string, minimumApprovals int, issueTitle, issueBody string, targetRepoOwner string, targetRepoName string) (*approvalEnvironment, error) {
@@ -44,6 +45,7 @@ func newApprovalEnvironment(client *github.Client, repoFullName, repoOwner strin
 		issueBody:        issueBody,
 		targetRepoOwner:  targetRepoOwner,
 		targetRepoName:   targetRepoName,
+		failOnDenial:     failOnDenial,
 	}, nil
 }
 

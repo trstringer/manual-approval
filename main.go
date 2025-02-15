@@ -13,6 +13,19 @@ import (
 	"golang.org/x/oauth2"
 )
 
+func setActionOutput(name, value string) error {
+	f, err := os.OpenFile(os.Getenv("GITHUB_OUTPUT"), os.O_APPEND|os.O_WRONLY, 0600)
+	if err != nil {
+			return err
+	}
+	defer f.Close()
+
+	if _, err = f.WriteString(fmt.Sprintf("%s=%s\n", name, value)); err != nil {
+			return err
+	}
+	return nil
+}
+
 func handleInterrupt(ctx context.Context, client *github.Client, apprv *approvalEnvironment) {
 	newState := "closed"
 	closeComment := "Workflow cancelled, closing issue."
@@ -72,7 +85,14 @@ func newCommentLoopChannel(ctx context.Context, apprv *approvalEnvironment, clie
 				close(channel)
 			case approvalStatusDenied:
 				newState := "closed"
-				closeComment := "Request denied. Closing issue and failing workflow."
+				closeComment := "Request denied. Closing issue "
+				if !apprv.failOnDenial {
+					closeComment += "but continuing"
+				} else {
+					closeComment += "and failing"
+				}
+				closeComment += " workflow."
+
 				_, _, err := client.Issues.CreateComment(ctx, apprv.targetRepoOwner, apprv.targetRepoName, apprv.approvalIssueNumber, &github.IssueComment{
 					Body: &closeComment,
 				})
@@ -180,6 +200,16 @@ func main() {
 		os.Exit(1)
 	}
 
+	failOnDenial := true
+	failOnDenialRaw := os.Getenv(envVarFailOnDenial)
+	if failOnDenialRaw != "" {
+		failOnDenial, err = strconv.ParseBool(failOnDenialRaw)
+		if err != nil {
+			fmt.Printf("error parsing fail on denial: %v\n", err)
+			os.Exit(1)
+		}
+	}
+
 	issueTitle := os.Getenv(envVarIssueTitle)
 	issueBody := os.Getenv(envVarIssueBody)
 	minimumApprovalsRaw := os.Getenv(envVarMinimumApprovals)
@@ -191,7 +221,7 @@ func main() {
 			os.Exit(1)
 		}
 	}
-	apprv, err := newApprovalEnvironment(client, repoFullName, repoOwner, runID, approvers, minimumApprovals, issueTitle, issueBody, targetRepoOwner, targetRepoName)
+	apprv, err := newApprovalEnvironment(client, repoFullName, repoOwner, runID, approvers, minimumApprovals, issueTitle, issueBody, targetRepoOwner, targetRepoName, failOnDenial)
 	if err != nil {
 		fmt.Printf("error creating approval environment: %v\n", err)
 		os.Exit(1)
@@ -210,6 +240,20 @@ func main() {
 
 	select {
 	case exitCode := <-commentLoopChannel:
+		approvalStatus := ""
+
+		if (!failOnDenial && exitCode == 1) {
+			approvalStatus = "denied"
+			exitCode = 0
+		} else if (exitCode == 1) {
+			approvalStatus = "denied"
+		} else {
+			approvalStatus = "approved"
+		}
+		if err := setActionOutput("approval_status", approvalStatus); err != nil {
+			fmt.Printf("error setting action output: %v\n", err)
+			exitCode = 1
+		}
 		os.Exit(exitCode)
 	case <-killSignalChannel:
 		handleInterrupt(ctx, client, apprv)
