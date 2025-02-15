@@ -46,7 +46,7 @@ steps:
 - `additional-approved-words` is a comma separated list of strings to expand the dictionary of words that indicate approval. This is optional and defaults to an empty string.
 - `additional-denied-words` is a comma separated list of strings to expand the dictionary of words that indicate denial. This is optional and defaults to an empty string.
 
-#### Creating Issues in a different repository
+### Creating Issues in a different repository
 
 ```yaml
 steps:
@@ -60,11 +60,10 @@ steps:
       exclude-workflow-initiator-as-approver: false
       additional-approved-words: ''
       additional-denied-words: ''
-    env:
       target-repository: repository-name
       target-repository-owner: owner-id
 ```
-- if any of `target-repository` or `target-repository-owner` is missing or is an empty string then the issue will be created in the same repository where this step is used and these two environment variables will be rendered moot.
+- if either of `target-repository` or `target-repository-owner` is missing or is an empty string then the issue will be created in the same repository where this step is used.
 
 ### Using Custom Words
 

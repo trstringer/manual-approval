@@ -38,6 +38,12 @@ inputs:
     description: Whether or not to fail the workflow if the approval is denied
     required: false
     default: 'true'
+  target-repository-owner:
+    description: Owner of the repository in which the issue will be created.
+    default: ''
+  target-repository:
+    description: Name of the repository in which the issue will be created.
+    default: ''
 runs:
   using: docker
   image: docker://ghcr.io/trstringer/manual-approval:1.9.1

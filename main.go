@@ -170,8 +170,8 @@ func main() {
 		os.Exit(1)
 	}
 
-	targetRepoOwner := os.Getenv("target-repository-owner")
-	targetRepoName := os.Getenv("target-repository")
+	targetRepoName := os.Getenv(envVarTargetRepo)
+	targetRepoOwner := os.Getenv(envVarTargetRepoOwner)
 
 	repoFullName := os.Getenv(envVarRepoFullName)
 	runID, err := strconv.Atoi(os.Getenv(envVarRunID))
