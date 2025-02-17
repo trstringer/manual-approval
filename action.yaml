@@ -13,9 +13,6 @@ inputs:
   minimum-approvals:
     description: Minimum number of approvals to progress workflow
     required: false
-  timeout-minutes:
-    description: Force timeout of your workflow pause
-    required: false
   issue-title:
     description: The custom subtitle for the issue
     required: false
