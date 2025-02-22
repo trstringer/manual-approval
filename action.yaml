@@ -34,6 +34,12 @@ inputs:
     description: Comma separated list of words that can be used to deny beyond the defaults.
     required: false
     default: ''
+  target-repository-owner:
+    description: Owner of the repository in which the issue will be created.
+    default: ''
+  target-repository:
+    description: Name of the repository in which the issue will be created.
+    default: ''
   fail-on-denial:
     description: Whether or not to fail the workflow if the approval is denied
     required: false
