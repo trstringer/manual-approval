@@ -64,12 +64,14 @@ func (a *approvalEnvironment) createApprovalIssue(ctx context.Context) error {
 		issueTitle = fmt.Sprintf("%s: %s", issueTitle, a.issueTitle)
 	}
 
-	issueBody := fmt.Sprintf(`Workflow is pending manual review.
-URL: %s
+	issueBody := fmt.Sprintf(`> Workflow is pending manual review.
+> URL: %s
 
-Required approvers: %s
+> [!IMPORTANT]
+> Required approvers: %s
 
-Respond %s to continue workflow or %s to cancel.`,
+> [!TIP]
+> Respond %s to continue workflow or %s to cancel.`,
 		a.runURL(),
 		a.issueApprovers,
 		formatAcceptedWords(approvedWords),
@@ -77,8 +79,9 @@ Respond %s to continue workflow or %s to cancel.`,
 	)
 
 	if a.issueBody != "" {
-		issueBody = fmt.Sprintf("%s\n\n%s", a.issueBody, issueBody)
+		issueBody = fmt.Sprintf(">%s\n>\n%s", a.issueBody, issueBody)
 	}
+	issueBody = fmt.Sprintf(">[!NOTE]\n%s", issueBody)
 
 	var err error
 	fmt.Printf(
