@@ -64,16 +64,22 @@ func (a *approvalEnvironment) createApprovalIssue(ctx context.Context) error {
 		issueTitle = fmt.Sprintf("%s: %s", issueTitle, a.issueTitle)
 	}
 
+	approversBody := ""
+	for _, approver := range a.issueApprovers {
+		approversBody = fmt.Sprintf("%s> * @%s\n", approversBody, approver)
+	}
+
 	issueBody := fmt.Sprintf(`> Workflow is pending manual review.
 > URL: %s
 
 > [!IMPORTANT]
-> Required approvers: %s
+> Required approvers: 
+%s
 
 > [!TIP]
 > Respond %s to continue workflow or %s to cancel.`,
 		a.runURL(),
-		a.issueApprovers,
+		approversBody,
 		formatAcceptedWords(approvedWords),
 		formatAcceptedWords(deniedWords),
 	)
