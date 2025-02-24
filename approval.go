@@ -19,12 +19,13 @@ type approvalEnvironment struct {
 	approvalIssueNumber int
 	issueTitle          string
 	issueBody           string
+	issueLabels         []string
 	issueApprovers      []string
 	minimumApprovals    int
 	failOnDenial        bool
 }
 
-func newApprovalEnvironment(client *github.Client, repoFullName, repoOwner string, runID int, approvers []string, minimumApprovals int, issueTitle, issueBody string, failOnDenial bool) (*approvalEnvironment, error) {
+func newApprovalEnvironment(client *github.Client, repoFullName, repoOwner string, runID int, approvers []string, minimumApprovals int, issueTitle, issueBody string, issueLabels []string, failOnDenial bool) (*approvalEnvironment, error) {
 	repoOwnerAndName := strings.Split(repoFullName, "/")
 	if len(repoOwnerAndName) != 2 {
 		return nil, fmt.Errorf("repo owner and name in unexpected format: %s", repoFullName)
@@ -41,16 +42,13 @@ func newApprovalEnvironment(client *github.Client, repoFullName, repoOwner strin
 		minimumApprovals: minimumApprovals,
 		issueTitle:       issueTitle,
 		issueBody:        issueBody,
+		issueLabels:      issueLabels,
 		failOnDenial:     failOnDenial,
 	}, nil
 }
 
 func (a approvalEnvironment) runURL() string {
-	baseUrl := a.client.BaseURL.String()
-	if strings.Contains(baseUrl, "github.com") {
-		baseUrl = "https://github.com/"
-	}
-	return fmt.Sprintf("%s%s/actions/runs/%d", baseUrl, a.repoFullName, a.runID)
+	return fmt.Sprintf("https://github.com/%s/actions/runs/%d", a.repoFullName, a.runID)
 }
 
 func (a *approvalEnvironment) createApprovalIssue(ctx context.Context) error {
@@ -78,17 +76,19 @@ Respond %s to continue workflow or %s to cancel.`,
 
 	var err error
 	fmt.Printf(
-		"Creating issue in repo %s/%s with the following content:\nTitle: %s\nApprovers: %s\nBody:\n%s\n",
+		"Creating issue in repo %s/%s with the following content:\nTitle: %s\nApprovers: %s\nBody:\n%s\nLabels:\n%s\n",
 		a.repoOwner,
 		a.repo,
 		issueTitle,
 		a.issueApprovers,
 		issueBody,
+		a.issueLabels,
 	)
 	a.approvalIssue, _, err = a.client.Issues.Create(ctx, a.repoOwner, a.repo, &github.IssueRequest{
 		Title:     &issueTitle,
 		Body:      &issueBody,
 		Assignees: &a.issueApprovers,
+		Labels:    &a.issueLabels,
 	})
 	if err != nil {
 		return err

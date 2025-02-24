@@ -1,0 +1,48 @@
+name: Pull Request
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths-ignore:
+      - "**/*.md"
+
+jobs:
+  ci:
+    name: CI
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Test
+        run: make test
+
+      - name: Lint
+        run: make lint
+
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          distribution: goreleaser
+          version: latest
+          args: release --snapshot --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create SBOM
+        uses: anchore/sbom-action@v0
+        with:
+          image: "ghcr.io/jamesrudd-pearson/manual-approval:latest"
+          format: "cyclonedx-json"
+          output-file: "${{ github.event.repository.name }}-sbom.cdx.json"
+
+      - name: Scan SBOM
+        uses: anchore/scan-action@v6
+        with:
+          sbom: "${{ github.event.repository.name }}-sbom.cdx.json"
+          severity-cutoff: "high"
+          only-fixed: true
+          fail-build: true
+          by-cve: true
+          output-format: "table"

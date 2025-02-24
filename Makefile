@@ -1,4 +1,4 @@
-IMAGE_REPO=ghcr.io/trstringer/manual-approval
+IMAGE_REPO=ghcr.io/jamesrudd-pearson/manual-approval
 TARGET_PLATFORM=linux/amd64
 
 .PHONY: build
@@ -24,3 +24,7 @@ test:
 .PHONY: lint
 lint:
 	docker run --rm -v $$(pwd):/app -w /app golangci/golangci-lint:v1.46.2 golangci-lint run -v
+
+.PHONY: local-build
+local-build:
+	goreleaser release --snapshot --clean

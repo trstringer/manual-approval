@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/google/go-github/v43/github"
@@ -15,12 +16,12 @@ import (
 func setActionOutput(name, value string) error {
 	f, err := os.OpenFile(os.Getenv("GITHUB_OUTPUT"), os.O_APPEND|os.O_WRONLY, 0600)
 	if err != nil {
-			return err
+		return err
 	}
 	defer f.Close()
 
 	if _, err = f.WriteString(fmt.Sprintf("%s=%s\n", name, value)); err != nil {
-			return err
+		return err
 	}
 	return nil
 }
@@ -200,6 +201,15 @@ func main() {
 		}
 	}
 
+	issueLabels := strings.Split(strings.TrimSpace(os.Getenv(envVarIssueLabels)), ",")
+	for _, label := range issueLabels {
+		err := createLabelIfNotExists(client, repoOwner, repoFullName, label)
+		if err != nil {
+			fmt.Printf("error creating label: %v\n", err)
+			os.Exit(1)
+		}
+	}
+
 	issueTitle := os.Getenv(envVarIssueTitle)
 	issueBody := os.Getenv(envVarIssueBody)
 	minimumApprovalsRaw := os.Getenv(envVarMinimumApprovals)
@@ -211,7 +221,7 @@ func main() {
 			os.Exit(1)
 		}
 	}
-	apprv, err := newApprovalEnvironment(client, repoFullName, repoOwner, runID, approvers, minimumApprovals, issueTitle, issueBody, failOnDenial)
+	apprv, err := newApprovalEnvironment(client, repoFullName, repoOwner, runID, approvers, minimumApprovals, issueTitle, issueBody, issueLabels, failOnDenial)
 	if err != nil {
 		fmt.Printf("error creating approval environment: %v\n", err)
 		os.Exit(1)
@@ -232,10 +242,10 @@ func main() {
 	case exitCode := <-commentLoopChannel:
 		approvalStatus := ""
 
-		if (!failOnDenial && exitCode == 1) {
+		if !failOnDenial && exitCode == 1 {
 			approvalStatus = "denied"
 			exitCode = 0
-		} else if (exitCode == 1) {
+		} else if exitCode == 1 {
 			approvalStatus = "denied"
 		} else {
 			approvalStatus = "approved"

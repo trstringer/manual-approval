@@ -1,2 +1,4 @@
 .env
 .idea/
+# Added by goreleaser init:
+dist/
