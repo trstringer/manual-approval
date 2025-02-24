@@ -18,7 +18,7 @@
         "exec"
       ],
       "options": {
-        "exec_on_success": "sed -i 's|\\(image: docker://ghcr.io/jamesrudd-pearson/manual-approval:\\)[0-9]\\+\\.[0-9]\\+\\.[0-9]\\+|{{.version_major}}.{{version_minor}}.{{version_patch}}|g' action.yaml"
+        "exec_on_success": "sed -i \"s|\\(image: docker://ghcr.io/jamesrudd-pearson/manual-approval:\\)[0-9]\\+\\.[0-9]\\+\\.[0-9]\\+|{{.NewRelease.Version}}|g\" action.yaml"
       }
     }
   }
