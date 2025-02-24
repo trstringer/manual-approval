@@ -1,0 +1,47 @@
+version: 2
+
+before:
+  hooks:
+    - go mod tidy
+    - go test -v ./...
+
+builds:
+  - id: "app"
+    binary: app
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+    goarch:
+      - amd64
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+    include:
+      - "^feat:"
+      - "^fix:"
+
+dockers:
+  - ids:
+      - "app"
+    dockerfile: Dockerfile
+    use: docker
+    image_templates:
+      - "ghcr.io/jamesrudd-pearson/manual-approval:{{ .Major }}.{{ .Minor }}.{{ .Patch }}"
+      - "ghcr.io/jamesrudd-pearson/manual-approval:latest"
+
+release:
+  footer: >-
+
+    ---
+
+    Released by [GoReleaser](https://github.com/goreleaser/goreleaser).
+  github:
+    owner: jamesrudd-pearson
+    name: manual-approval
+  ids:
+    - "app"
