@@ -53,6 +53,25 @@ steps:
 
 * `approval_status` is a string that indicates the final status of the approval. This will be either `approved` or `denied`.
 
+### Creating Issues in a different repository
+
+```yaml
+steps:
+  - uses: trstringer/manual-approval@v1
+    with:
+      secret: ${{ github.TOKEN }}
+      approvers: user1,user2,org-team1
+      minimum-approvals: 1
+      issue-title: "Deploying v1.3.5 to prod from staging"
+      issue-body: "Please approve or deny the deployment of version v1.3.5."
+      exclude-workflow-initiator-as-approver: false
+      additional-approved-words: ''
+      additional-denied-words: ''
+      target-repository: repository-name
+      target-repository-owner: owner-id
+```
+- if either of `target-repository` or `target-repository-owner` is missing or is an empty string then the issue will be created in the same repository where this step is used.
+
 ### Using Custom Words
 
 GitHub has a rich library of emojis, and these all work in additional approved words or denied words.  Some values GitHub will store in their text version - i.e. `:shipit:`. Other emojis, GitHub will store in their unicode emoji form, like ✅.

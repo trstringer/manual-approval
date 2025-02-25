@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/google/go-github/v43/github"
@@ -30,14 +31,14 @@ func handleInterrupt(ctx context.Context, client *github.Client, apprv *approval
 	closeComment := "Workflow cancelled, closing issue."
 
 	fmt.Println(closeComment)
-	_, _, err := client.Issues.CreateComment(ctx, apprv.repoOwner, apprv.repo, apprv.approvalIssueNumber, &github.IssueComment{
+	_, _, err := client.Issues.CreateComment(ctx, apprv.targetRepoOwner, apprv.targetRepoName, apprv.approvalIssueNumber, &github.IssueComment{
 		Body: &closeComment,
 	})
 	if err != nil {
 		fmt.Printf("error commenting on issue: %v\n", err)
 		return
 	}
-	_, _, err = client.Issues.Edit(ctx, apprv.repoOwner, apprv.repo, apprv.approvalIssueNumber, &github.IssueRequest{State: &newState})
+	_, _, err = client.Issues.Edit(ctx, apprv.targetRepoOwner, apprv.targetRepoName, apprv.approvalIssueNumber, &github.IssueRequest{State: &newState})
 	if err != nil {
 		fmt.Printf("error closing issue: %v\n", err)
 		return
@@ -48,7 +49,7 @@ func newCommentLoopChannel(ctx context.Context, apprv *approvalEnvironment, clie
 	channel := make(chan int)
 	go func() {
 		for {
-			comments, _, err := client.Issues.ListComments(ctx, apprv.repoOwner, apprv.repo, apprv.approvalIssueNumber, &github.IssueListCommentsOptions{})
+			comments, _, err := client.Issues.ListComments(ctx, apprv.targetRepoOwner, apprv.targetRepoName, apprv.approvalIssueNumber, &github.IssueListCommentsOptions{})
 			if err != nil {
 				fmt.Printf("error getting comments: %v\n", err)
 				channel <- 1
@@ -65,8 +66,8 @@ func newCommentLoopChannel(ctx context.Context, apprv *approvalEnvironment, clie
 			switch approved {
 			case approvalStatusApproved:
 				newState := "closed"
-				closeComment := fmt.Sprintf("The required number of approvals (%d) has been met; continuing workflow and closing this issue.", apprv.minimumApprovals)
-				_, _, err := client.Issues.CreateComment(ctx, apprv.repoOwner, apprv.repo, apprv.approvalIssueNumber, &github.IssueComment{
+        closeComment := fmt.Sprintf("The required number of approvals (%d) has been met; continuing workflow and closing this issue.", apprv.minimumApprovals)
+				_, _, err := client.Issues.CreateComment(ctx, apprv.targetRepoOwner, apprv.targetRepoName, apprv.approvalIssueNumber, &github.IssueComment{
 					Body: &closeComment,
 				})
 				if err != nil {
@@ -74,7 +75,7 @@ func newCommentLoopChannel(ctx context.Context, apprv *approvalEnvironment, clie
 					channel <- 1
 					close(channel)
 				}
-				_, _, err = client.Issues.Edit(ctx, apprv.repoOwner, apprv.repo, apprv.approvalIssueNumber, &github.IssueRequest{State: &newState})
+				_, _, err = client.Issues.Edit(ctx, apprv.targetRepoOwner, apprv.targetRepoName, apprv.approvalIssueNumber, &github.IssueRequest{State: &newState})
 				if err != nil {
 					fmt.Printf("error closing issue: %v\n", err)
 					channel <- 1
@@ -93,7 +94,7 @@ func newCommentLoopChannel(ctx context.Context, apprv *approvalEnvironment, clie
 				}
 				closeComment += " workflow."
 
-				_, _, err := client.Issues.CreateComment(ctx, apprv.repoOwner, apprv.repo, apprv.approvalIssueNumber, &github.IssueComment{
+				_, _, err := client.Issues.CreateComment(ctx, apprv.targetRepoOwner, apprv.targetRepoName, apprv.approvalIssueNumber, &github.IssueComment{
 					Body: &closeComment,
 				})
 				if err != nil {
@@ -101,7 +102,7 @@ func newCommentLoopChannel(ctx context.Context, apprv *approvalEnvironment, clie
 					channel <- 1
 					close(channel)
 				}
-				_, _, err = client.Issues.Edit(ctx, apprv.repoOwner, apprv.repo, apprv.approvalIssueNumber, &github.IssueRequest{State: &newState})
+				_, _, err = client.Issues.Edit(ctx, apprv.targetRepoOwner, apprv.targetRepoName, apprv.approvalIssueNumber, &github.IssueRequest{State: &newState})
 				if err != nil {
 					fmt.Printf("error closing issue: %v\n", err)
 					channel <- 1
@@ -170,6 +171,9 @@ func main() {
 		os.Exit(1)
 	}
 
+	targetRepoName := os.Getenv(envVarTargetRepo)
+	targetRepoOwner := os.Getenv(envVarTargetRepoOwner)
+
 	repoFullName := os.Getenv(envVarRepoFullName)
 	runID, err := strconv.Atoi(os.Getenv(envVarRunID))
 	if err != nil {
@@ -177,6 +181,12 @@ func main() {
 		os.Exit(1)
 	}
 	repoOwner := os.Getenv(envVarRepoOwner)
+
+	if targetRepoName == "" || targetRepoOwner == "" {
+		parts := strings.SplitN(repoFullName, "/", 2)
+		targetRepoOwner = parts[0]
+		targetRepoName = parts[1]
+	}
 
 	ctx := context.Background()
 	client, err := newGithubClient(ctx)
@@ -212,7 +222,8 @@ func main() {
 			os.Exit(1)
 		}
 	}
-	apprv, err := newApprovalEnvironment(client, repoFullName, repoOwner, runID, approvers, minimumApprovals, issueTitle, issueBody, failOnDenial)
+
+	apprv, err := newApprovalEnvironment(client, repoFullName, repoOwner, runID, approvers, minimumApprovals, issueTitle, issueBody, targetRepoOwner, targetRepoName, failOnDenial)
 	if err != nil {
 		fmt.Printf("error creating approval environment: %v\n", err)
 		os.Exit(1)
