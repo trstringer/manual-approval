@@ -468,7 +468,7 @@ func TestSaveOutput(t *testing.T) {
 			}
 
 			os.Remove(testCase.env_github_output)
-			actual, err := a.saveOutput(nil)
+			actual, err := a.SetActionOutputs(nil)
 
 			if err != nil {
 				t.Fatalf("error creating output file: %v: %v", testCase.env_github_output, err)

@@ -113,7 +113,7 @@ func (a *approvalEnvironment) createApprovalIssue(ctx context.Context) error {
 	return nil
 }
 
-func (a *approvalEnvironment) saveOutputs(outputs map[string]string) (bool, error) {
+func (a *approvalEnvironment) SetActionOutputs(outputs map[string]string) (bool, error) {
 	outputFile := os.Getenv("GITHUB_OUTPUT")
 	if outputFile == "" {
 		return false, nil
