@@ -9,7 +9,7 @@ permissions:
 
 jobs:
   CodeQL-Build:
-    # if: github.repository == 'trstringer/manual-approval'
+    if: github.repository == 'trstringer/manual-approval'
     permissions:
       actions: read
       contents: read
