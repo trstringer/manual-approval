@@ -2,6 +2,8 @@ name: "Code Analysis"
 
 on:
   push:
+    branches:
+      - "main"
   pull_request:
 
 permissions:
