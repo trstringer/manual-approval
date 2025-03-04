@@ -21,6 +21,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
+      - name: Refresh module hashsums
+        run: make tidy
       - name: Build
         run: make build
         env:
