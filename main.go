@@ -222,8 +222,8 @@ func main() {
 	}
 
 	outputs := map[string]string {
-		"issue-number": fmt.Sprintf("%d", a.approvalIssueNumber),
-		"issue-url": a.approvalIssue.GetURL()
+		"issue-number": fmt.Sprintf("%d", apprv.approvalIssueNumber),
+		"issue-url": apprv.approvalIssue.GetHTMLURL(),
 	}
 	_, err = apprv.SetActionOutputs(outputs)
 	if err != nil {
@@ -249,9 +249,9 @@ func main() {
 			approvalStatus = "approved"
 		}
 		outputs := map[string]string {
-			"approval-status": approvalStatus
+			"approval-status": approvalStatus,
 		}
-		if err := SetActionOutputs(outputs); err != nil {
+		if _, err := apprv.SetActionOutputs(outputs); err != nil {
 			fmt.Printf("error setting action output: %v\n", err)
 			exitCode = 1
 		}

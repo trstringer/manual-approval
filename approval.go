@@ -132,6 +132,18 @@ func (a *approvalEnvironment) SetActionOutputs(outputs map[string]string) (bool,
 		pairs = append(pairs, fmt.Sprintf("%s=%s", key, value))
 	}
 
+	// Add a newline before writing the new outputs if the file is not empty. This prevents
+	// two outputs from being written on the same line.
+	fileInfo, err := f.Stat()
+	if err != nil {
+			return false, err
+	}
+	if fileInfo.Size() > 0 {
+			if _, err := f.WriteString("\n"); err != nil {
+					return false, err
+			}
+	}
+
 	if _, err := f.WriteString(strings.Join(pairs, "\n")); err != nil {
 		return false, err
 	}
