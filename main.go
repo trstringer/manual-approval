@@ -29,6 +29,7 @@ func setActionOutput(name, value string) error {
 func handleInterrupt(ctx context.Context, client *github.Client, apprv *approvalEnvironment) {
 	newState := "closed"
 	closeComment := "Workflow cancelled, closing issue."
+
 	fmt.Println(closeComment)
 	_, _, err := client.Issues.CreateComment(ctx, apprv.targetRepoOwner, apprv.targetRepoName, apprv.approvalIssueNumber, &github.IssueComment{
 		Body: &closeComment,
@@ -65,7 +66,7 @@ func newCommentLoopChannel(ctx context.Context, apprv *approvalEnvironment, clie
 			switch approved {
 			case approvalStatusApproved:
 				newState := "closed"
-				closeComment := "All approvers have approved, continuing workflow and closing this issue."
+				closeComment := fmt.Sprintf("The required number of approvals (%d) has been met; continuing workflow and closing this issue.", apprv.minimumApprovals)
 				_, _, err := client.Issues.CreateComment(ctx, apprv.targetRepoOwner, apprv.targetRepoName, apprv.approvalIssueNumber, &github.IssueComment{
 					Body: &closeComment,
 				})
