@@ -7,6 +7,8 @@ assignees: ''
 
 ---
 
+- [ ] I have searched through the current issues and did not find any that were related.
+
 **Describe the bug**
 A clear and concise description of what the bug is.
 
