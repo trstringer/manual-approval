@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"os"
 	"regexp"
 	"strings"
 
@@ -110,6 +111,44 @@ func (a *approvalEnvironment) createApprovalIssue(ctx context.Context) error {
 
 	fmt.Printf("Issue created: %s\n", a.approvalIssue.GetHTMLURL())
 	return nil
+}
+
+func (a *approvalEnvironment) SetActionOutputs(outputs map[string]string) (bool, error) {
+	outputFile := os.Getenv("GITHUB_OUTPUT")
+	if outputFile == "" {
+		return false, nil
+	}
+
+	f, err := os.OpenFile(outputFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+
+	if err != nil {
+		return false, err
+	}
+	defer f.Close()
+
+	var pairs []string
+
+	for key, value := range outputs {
+		pairs = append(pairs, fmt.Sprintf("%s=%s", key, value))
+	}
+
+	// Add a newline before writing the new outputs if the file is not empty. This prevents
+	// two outputs from being written on the same line.
+	fileInfo, err := f.Stat()
+	if err != nil {
+			return false, err
+	}
+	if fileInfo.Size() > 0 {
+			if _, err := f.WriteString("\n"); err != nil {
+					return false, err
+			}
+	}
+
+	if _, err := f.WriteString(strings.Join(pairs, "\n")); err != nil {
+		return false, err
+	}
+
+	return true, nil
 }
 
 func approvalFromComments(comments []*github.IssueComment, approvers []string, minimumApprovals int) (approvalStatus, error) {

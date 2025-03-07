@@ -13,19 +13,6 @@ import (
 	"golang.org/x/oauth2"
 )
 
-func setActionOutput(name, value string) error {
-	f, err := os.OpenFile(os.Getenv("GITHUB_OUTPUT"), os.O_APPEND|os.O_WRONLY, 0600)
-	if err != nil {
-			return err
-	}
-	defer f.Close()
-
-	if _, err = f.WriteString(fmt.Sprintf("%s=%s\n", name, value)); err != nil {
-			return err
-	}
-	return nil
-}
-
 func handleInterrupt(ctx context.Context, client *github.Client, apprv *approvalEnvironment) {
 	newState := "closed"
 	closeComment := "Workflow cancelled, closing issue."
@@ -235,6 +222,16 @@ func main() {
 		os.Exit(1)
 	}
 
+	outputs := map[string]string {
+		"issue-number": fmt.Sprintf("%d", apprv.approvalIssueNumber),
+		"issue-url": apprv.approvalIssue.GetHTMLURL(),
+	}
+	_, err = apprv.SetActionOutputs(outputs)
+	if err != nil {
+		fmt.Printf("error saving output: %v", err)
+		os.Exit(1)
+	}
+
 	killSignalChannel := make(chan os.Signal, 1)
 	signal.Notify(killSignalChannel, os.Interrupt)
 
@@ -252,7 +249,10 @@ func main() {
 		} else {
 			approvalStatus = "approved"
 		}
-		if err := setActionOutput("approval_status", approvalStatus); err != nil {
+		outputs := map[string]string {
+			"approval-status": approvalStatus,
+		}
+		if _, err := apprv.SetActionOutputs(outputs); err != nil {
 			fmt.Printf("error setting action output: %v\n", err)
 			exitCode = 1
 		}

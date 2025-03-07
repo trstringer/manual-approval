@@ -41,6 +41,13 @@ inputs:
     description: Whether or not to fail the workflow if the approval is denied
     required: false
     default: 'true'
+outputs:
+  issue-number:
+    description: The number of the issue created
+  issue-url:
+    description: The URL of the issue created
+  approval-status:
+    description: The status of the approval ("approved" or "denied")
 runs:
   using: docker
   image: docker://ghcr.io/trstringer/manual-approval:1.9.1
