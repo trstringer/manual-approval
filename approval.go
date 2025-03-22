@@ -85,9 +85,6 @@ func (a *approvalEnvironment) createApprovalIssue(ctx context.Context) error {
 		formatAcceptedWords(deniedWords),
 	)
 
-	// if a.issueBody != "" {
-	// 	issueBody = fmt.Sprintf(">%s\n>\n%s", a.issueBody, issueBody)
-	// }
 	issueBody = fmt.Sprintf(">[!NOTE]\n%s", issueBody)
 
 	var err error

@@ -1,4 +1,4 @@
-IMAGE_REPO=ghcr.io/snskarora/manual-approval
+IMAGE_REPO=ghcr.io/trstringer/manual-approval
 TARGET_PLATFORM=linux/amd64
 
 .PHONY: tidy
@@ -12,7 +12,6 @@ build:
 		exit 1; \
 	fi
 	docker build --platform $(TARGET_PLATFORM) -t $(IMAGE_REPO):$$VERSION .
-	docker push $(IMAGE_REPO):$(VERSION)
 
 .PHONY: push
 push:

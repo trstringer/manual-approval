@@ -1,4 +1,4 @@
-module github.com/snskArora/manual-approval
+module github.com/trstringer/manual-approval
 
 go 1.17
 
