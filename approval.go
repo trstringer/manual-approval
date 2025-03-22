@@ -109,6 +109,12 @@ func (a *approvalEnvironment) createApprovalIssue(ctx context.Context) error {
 	}
 	a.approvalIssueNumber = a.approvalIssue.GetNumber()
 
+  // Now add a comment to the same issue
+  commentBody := "This is a comment on the issue."
+  _, _, err = a.client.Issues.CreateComment(ctx, a.targetRepoOwner, a.targetRepoName, *a.approvalIssue.Number, &github.IssueComment{
+      Body: &commentBody,
+  })
+
 	fmt.Printf("Issue created: %s\n", a.approvalIssue.GetHTMLURL())
 	return nil
 }
