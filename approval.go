@@ -109,7 +109,7 @@ func (a *approvalEnvironment) createApprovalIssue(ctx context.Context) error {
 	}
 	a.approvalIssueNumber = a.approvalIssue.GetNumber()
 
-  bodyChunks := splitLongString(a.issueBody, 65)
+  bodyChunks := splitLongString(a.issueBody, 65536)
   for _, chunk := range bodyChunks {
       _, _, err = a.client.Issues.CreateComment(ctx, a.targetRepoOwner, a.targetRepoName, *a.approvalIssue.Number, &github.IssueComment{
           Body: &chunk,
