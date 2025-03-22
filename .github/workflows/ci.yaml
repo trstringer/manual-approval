@@ -27,13 +27,6 @@ jobs:
 
       - name: Refresh module hashsums
         run: make tidy
-      - name: Build
-        run: |
-          echo "${{ steps.generate_token.outputs.token }}" | docker login docker.pkg.github.com -u snskArora --password-stdin
-          make build
-        env:
-          VERSION: latest
-          AUTH: ${{ steps.generate_token.outputs.token }}
 
       - name: Generate token
         id: generate_token
@@ -41,6 +34,17 @@ jobs:
         with:
           app_id: ${{ secrets.APP_ID }}
           private_key: ${{ secrets.APP_PRIVATE_KEY }}
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: snskArora
+          password: ${{ steps.generate_token.outputs.token }}
+      - name: Build
+        run: make build
+        env:
+          VERSION: latest
 
       - name: Push
         run: make push
