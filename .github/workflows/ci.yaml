@@ -40,7 +40,7 @@ jobs:
         run: make push
         env:
           VERSION: latest
-          GH_TOKEN: ${{ steps.generate_token.outputs.token }}
+          AUTH: ${{ steps.generate_token.outputs.token }}
 
       - name: Test
         run: make test

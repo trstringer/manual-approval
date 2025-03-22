@@ -7,7 +7,7 @@ tidy:
 
 .PHONY: build
 build:
-	@if [ -z "$$VERSION" ]; then \
+	@if [ -z "$(VERSION)" ]; then \
 		echo "VERSION is required"; \
 		exit 1; \
 	fi
@@ -15,11 +15,12 @@ build:
 
 .PHONY: push
 push:
-	@if [ -z "$$VERSION" ]; then \
+	@if [ -z "$(VERSION)" ]; then \
 		echo "VERSION is required"; \
 		exit 1; \
 	fi
-	docker push $(IMAGE_REPO):$$VERSION
+	@echo $(AUTH) | docker login ghcr.io -u snskArora --password-stdin
+	docker push $(IMAGE_REPO):$(VERSION)
 
 .PHONY: test
 test:
