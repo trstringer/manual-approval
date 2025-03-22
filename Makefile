@@ -1,5 +1,5 @@
-IMAGE_REPO ?= ghcr.io/snskarora/manual-approval
-TARGET_PLATFORM ?= linux/amd64
+IMAGE_REPO=ghcr.io/snskarora/manual-approval
+TARGET_PLATFORM=linux/amd64
 
 .PHONY: tidy
 tidy:
