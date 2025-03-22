@@ -289,11 +289,11 @@ func splitLongString(input string, maxLength int) []string {
 	currentLength := 0
 
 	for i, line := range lines {
+    lineLength := len(line)
 		if i < len(lines)-1 {
 			lineLength++
     }
 
-    lineLength := len(line)
 		if currentLength+lineLength > maxLength {
 			if currentChunk.Len() > 0 {
 				result = append(result, currentChunk.String())
