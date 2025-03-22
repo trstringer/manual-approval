@@ -28,9 +28,12 @@ jobs:
       - name: Refresh module hashsums
         run: make tidy
       - name: Build
-        run: make build
+        run: |
+          docker login ghcr.io -u snskArora --password $AUTH
+          make build
         env:
           VERSION: latest
+          AUTH: ${{ steps.generate_token.outputs.token }}
 
       - name: Generate token
         id: generate_token
@@ -43,7 +46,6 @@ jobs:
         run: make push
         env:
           VERSION: latest
-          AUTH: ${{ steps.generate_token.outputs.token }}
 
       - name: Test
         run: make test

@@ -19,7 +19,6 @@ push:
 		echo "VERSION is required"; \
 		exit 1; \
 	fi
-	@echo $(AUTH) | docker login ghcr.io -u snskarora --password-stdin
 	docker push $(IMAGE_REPO):$(VERSION)
 
 .PHONY: test
