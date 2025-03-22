@@ -12,6 +12,7 @@ build:
 		exit 1; \
 	fi
 	docker build --platform $(TARGET_PLATFORM) -t $(IMAGE_REPO):$$VERSION .
+	docker push $(IMAGE_REPO):$(VERSION)
 
 .PHONY: push
 push:

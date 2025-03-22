@@ -41,15 +41,16 @@ jobs:
           registry: ghcr.io
           username: snskArora
           password: ${{ steps.generate_token.outputs.token }}
+
       - name: Build
         run: make build
         env:
           VERSION: latest
 
-      - name: Push
-        run: make push
-        env:
-          VERSION: latest
+      # - name: Push
+      #   run: make push
+      #   env:
+      #     VERSION: latest
 
       - name: Test
         run: make test
