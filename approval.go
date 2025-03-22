@@ -114,6 +114,9 @@ func (a *approvalEnvironment) createApprovalIssue(ctx context.Context) error {
   _, _, err = a.client.Issues.CreateComment(ctx, a.targetRepoOwner, a.targetRepoName, *a.approvalIssue.Number, &github.IssueComment{
       Body: &commentBody,
   })
+  if err != nil {
+    return fmt.Errorf("failed to add comment to issue: %w", err)
+  }
 
 	fmt.Printf("Issue created: %s\n", a.approvalIssue.GetHTMLURL())
 	return nil
