@@ -28,6 +28,10 @@ jobs:
         run: make build
         env:
           VERSION: latest
+      - name: Push
+        run: make push
+        env:
+          VERSION: latest
       - name: Test
         run: make test
       - name: Lint
