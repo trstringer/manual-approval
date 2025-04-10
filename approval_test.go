@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/google/go-github/v43/github"
@@ -15,6 +16,8 @@ func TestApprovalFromComments(t *testing.T) {
 	bodyApproved := "Approved"
 	bodyDenied := "Denied"
 	bodyPending := "not approval or denial"
+
+	login1u := strings.ToUpper(login1)
 
 	testCases := []struct {
 		name             string
@@ -159,6 +162,17 @@ func TestApprovalFromComments(t *testing.T) {
 			approvers:        []string{login1, login2, login3},
 			expectedStatus:   approvalStatusPending,
 			minimumApprovals: 2,
+		},
+		{
+			name: "single_approver_single_comment_approved_case_insensitive",
+			comments: []*github.IssueComment{
+				{
+					User: &github.User{Login: &login1u},
+					Body: &bodyApproved,
+				},
+			},
+			approvers:      []string{login1},
+			expectedStatus: approvalStatusApproved,
 		},
 	}
 
