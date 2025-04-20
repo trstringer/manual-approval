@@ -136,12 +136,12 @@ func (a *approvalEnvironment) SetActionOutputs(outputs map[string]string) (bool,
 	// two outputs from being written on the same line.
 	fileInfo, err := f.Stat()
 	if err != nil {
-			return false, err
+		return false, err
 	}
 	if fileInfo.Size() > 0 {
-			if _, err := f.WriteString("\n"); err != nil {
-					return false, err
-			}
+		if _, err := f.WriteString("\n"); err != nil {
+			return false, err
+		}
 	}
 
 	if _, err := f.WriteString(strings.Join(pairs, "\n")); err != nil {
@@ -194,7 +194,7 @@ func approvalFromComments(comments []*github.IssueComment, approvers []string, m
 
 func approversIndex(approvers []string, name string) int {
 	for idx, approver := range approvers {
-		if approver == name {
+		if strings.EqualFold(approver, name) {
 			return idx
 		}
 	}
