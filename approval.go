@@ -85,9 +85,6 @@ func (a *approvalEnvironment) createApprovalIssue(ctx context.Context) error {
 		formatAcceptedWords(deniedWords),
 	)
 
-	if a.issueBody != "" {
-		issueBody = fmt.Sprintf(">%s\n>\n%s", a.issueBody, issueBody)
-	}
 	issueBody = fmt.Sprintf(">[!NOTE]\n%s", issueBody)
 
 	var err error
@@ -108,6 +105,16 @@ func (a *approvalEnvironment) createApprovalIssue(ctx context.Context) error {
 		return err
 	}
 	a.approvalIssueNumber = a.approvalIssue.GetNumber()
+
+  bodyChunks := splitLongString(a.issueBody)
+  for _, chunk := range bodyChunks {
+      _, _, err = a.client.Issues.CreateComment(ctx, a.targetRepoOwner, a.targetRepoName, *a.approvalIssue.Number, &github.IssueComment{
+          Body: &chunk,
+      })
+      if err != nil {
+          return fmt.Errorf("failed to add comment chunk to issue: %w", err)
+      }
+  }
 
 	fmt.Printf("Issue created: %s\n", a.approvalIssue.GetHTMLURL())
 	return nil
@@ -244,3 +251,76 @@ func formatAcceptedWords(words []string) string {
 
 	return strings.Join(quotedWords, ", ")
 }
+
+func splitLongLine(line string, maxL int) ([]string, bool) {
+	if len(line) <= maxL {
+		return []string{line}, false
+	}
+
+	words := strings.Fields(line)
+	var result []string
+	var currentLine string
+
+	for _, word := range words {
+		if len(currentLine)+len(word)+1 > maxL {
+			result = append(result, currentLine)
+			currentLine = word
+		} else {
+			if currentLine != "" {
+				currentLine += " "
+			}
+			currentLine += word
+		}
+	}
+	if currentLine != "" {
+		result = append(result, currentLine)
+	}
+	return result, true
+}
+
+func splitLongString(input string) []string {
+	maxLength := 65536
+	var result []string
+
+	lines := strings.Split(input, "\n")
+	currentChunk := strings.Builder{}
+	currentLength := 0
+
+	for i, line := range lines {
+    lineLength := len(line)
+		if i < len(lines)-1 {
+			lineLength++
+    }
+
+		if currentLength+lineLength > maxLength {
+			if currentChunk.Len() > 0 {
+				result = append(result, currentChunk.String())
+				currentChunk.Reset()
+				currentLength = 0
+			}
+		}
+
+		lineSplit, isLongLine := splitLongLine(line, maxLength)
+		if isLongLine {
+			if currentChunk.Len() > 0 {
+				result = append(result, currentChunk.String())
+				currentChunk.Reset()
+			}
+			result = append(result, lineSplit[:len(lineSplit)-1]...)
+			currentChunk.WriteString(lineSplit[len(lineSplit)-1])
+			currentLength = len(lineSplit[len(lineSplit)-1])
+		} else {
+			currentChunk.WriteString(line)
+			currentLength += lineLength
+		}
+
+		if i < len(lines)-1 {
+			currentChunk.WriteString("\n")
+		}
+	}
+	if currentChunk.Len() > 0 {
+		result = append(result, currentChunk.String())
+	}
+	return result
+}
+
