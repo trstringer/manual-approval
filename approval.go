@@ -106,7 +106,7 @@ func (a *approvalEnvironment) createApprovalIssue(ctx context.Context) error {
 	}
 	a.approvalIssueNumber = a.approvalIssue.GetNumber()
 
-  bodyChunks := splitLongString(a.issueBody, 65536)
+  bodyChunks := splitLongString(a.issueBody)
   for _, chunk := range bodyChunks {
       _, _, err = a.client.Issues.CreateComment(ctx, a.targetRepoOwner, a.targetRepoName, *a.approvalIssue.Number, &github.IssueComment{
           Body: &chunk,
@@ -278,7 +278,8 @@ func splitLongLine(line string, maxL int) ([]string, bool) {
 	return result, true
 }
 
-func splitLongString(input string, maxLength int) []string {
+func splitLongString(input string) []string {
+	maxLength := 65536
 	var result []string
 
 	lines := strings.Split(input, "\n")
