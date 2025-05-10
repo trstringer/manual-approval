@@ -108,13 +108,29 @@ jobs:
 
 If you'd like to force a timeout of your workflow pause, you can specify `timeout-minutes` at either the [step](https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idstepstimeout-minutes) level or the [job](https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idtimeout-minutes) level.
 
+> **Note:** The `timeout-minutes` option has been removed from the `manual-approval` inputs, as it did nothing and incorrectly assured users that they were in fact
+> getting timeout behavior.  Please use one of the below two approaches instead.
+>
+> If you are currently using `timeout-minutes` as a `manual-approval` input, you may see a warning, but this will not break your action.
+
 For instance, if you want your manual approval step to timeout after an hour you could do the following:
 
 ```yaml
-steps:
-  - uses: trstringer/manual-approval@v1
-    timeout-minutes: 60
+jobs:
+  approval:
+    steps:
+      - uses: trstringer/manual-approval@v1
+        timeout-minutes: 60
     ...
+```
+or 
+```yaml
+jobs:
+  approval:
+    timeout-minutes: 10
+    steps:
+      - uses: trstringer/manual-approval@v1
+
 ```
 
 ## Permissions
