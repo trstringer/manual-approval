@@ -51,7 +51,7 @@ steps:
 
 ### Outputs
 
-* `approval_status` is a string that indicates the final status of the approval. This will be either `approved` or `denied`.
+* `approval-status` is a string that indicates the final status of the approval. This will be either `approved` or `denied`.
 
 ### Creating Issues in a different repository
 
