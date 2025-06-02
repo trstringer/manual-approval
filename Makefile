@@ -1,5 +1,5 @@
-IMAGE_REPO=ghcr.io/trstringer/manual-approval
-TARGET_PLATFORM=linux/amd64
+IMAGE_REPO=ghcr.io/snskarora/manual-approval
+TARGET_PLATFORM?=linux/amd64
 
 .PHONY: tidy
 tidy:
@@ -27,4 +27,4 @@ test:
 
 .PHONY: lint
 lint:
-	docker run --rm -v $$(pwd):/app -w /app golangci/golangci-lint:v1.46.2 golangci-lint run -v
+	docker run --rm -v $$(pwd):/app -w /app golangci/golangci-lint:v2.1.6 golangci-lint run -v
