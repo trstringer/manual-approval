@@ -467,7 +467,7 @@ func TestSaveOutput(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			os.Setenv("GITHUB_OUTPUT", testCase.env_github_output)
+			t.Setenv("GITHUB_OUTPUT", testCase.env_github_output)
 			a := approvalEnvironment{
 				client:              nil,
 				repoFullName:        "",
