@@ -127,11 +127,13 @@ func (a *approvalEnvironment) SetActionOutputs(outputs map[string]string) (bool,
 	}
 
 	f, err := os.OpenFile(outputFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-
 	if err != nil {
 		return false, err
 	}
-	defer f.Close()
+
+    defer func() {
+        _ = f.Close() // Error explicitly ignored as there is nothing to handle if file close fails.
+    }()
 
 	var pairs []string
 
