@@ -23,8 +23,7 @@ These are case insensitive with optional punctuation either a period or an excla
 
 In all cases, `manual-approval` will close the initial GitHub issue.
 
-🖥️ Supported Runners
-The action is compatible with the following runner types:
+🖥️ Supported Runners, The action is compatible with the following runner types:
 - Linux/amd64 — 64-bit Intel/AMD (x86_64)
 - Linux/arm64 — 64-bit ARM (Apple M1)
 - Linux/arm/v8 — 64-bit ARM
