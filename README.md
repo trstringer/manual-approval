@@ -28,6 +28,7 @@ The action is compatible with the following runner types:
 - Linux/amd64 — 64-bit Intel/AMD (x86_64)
 - Linux/arm64 — 64-bit ARM (Apple M1)
 - Linux/arm/v8 — 64-bit ARM
+
 🚫 Unsupported
 - Windows/amd64 — 64-bit Windows systems are currently not supported.
 
