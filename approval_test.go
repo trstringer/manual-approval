@@ -1,6 +1,9 @@
 package main
 
 import (
+	"errors"
+	"os"
+	"strings"
 	"testing"
 
 	"github.com/google/go-github/v43/github"
@@ -13,6 +16,8 @@ func TestApprovalFromComments(t *testing.T) {
 	bodyApproved := "Approved"
 	bodyDenied := "Denied"
 	bodyPending := "not approval or denial"
+
+	login1u := strings.ToUpper(login1)
 
 	testCases := []struct {
 		name             string
@@ -157,6 +162,17 @@ func TestApprovalFromComments(t *testing.T) {
 			approvers:        []string{login1, login2, login3},
 			expectedStatus:   approvalStatusPending,
 			minimumApprovals: 2,
+		},
+		{
+			name: "single_approver_single_comment_approved_case_insensitive",
+			comments: []*github.IssueComment{
+				{
+					User: &github.User{Login: &login1u},
+					Body: &bodyApproved,
+				},
+			},
+			approvers:      []string{login1},
+			expectedStatus: approvalStatusApproved,
 		},
 	}
 
@@ -423,6 +439,63 @@ func TestDeniedCommentBody(t *testing.T) {
 			// after each
 			if len(word) > 0 {
 				deniedWords = deniedWords[:len(deniedWords)-1]
+			}
+		})
+	}
+}
+
+func TestSaveOutput(t *testing.T) {
+	testCases := []struct {
+		name                string
+		approvalIssueNumber int
+		env_github_output   string
+		isSuccess           bool
+	}{
+		{
+			name:                "save_output_with_env",
+			approvalIssueNumber: 123,
+			env_github_output:   "./output.txt",
+			isSuccess:           true,
+		},
+		{
+			name:                "fail_save_output_without_env",
+			approvalIssueNumber: 123,
+			env_github_output:   "",
+			isSuccess:           false,
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			os.Setenv("GITHUB_OUTPUT", testCase.env_github_output)
+			a := approvalEnvironment{
+				client:              nil,
+				repoFullName:        "",
+				repo:                "",
+				repoOwner:           "",
+				runID:               -1,
+				approvalIssueNumber: testCase.approvalIssueNumber,
+				issueTitle:          "",
+				issueBody:           "",
+				issueApprovers:      nil,
+				minimumApprovals:    0,
+			}
+
+			os.Remove(testCase.env_github_output)
+			actual, err := a.SetActionOutputs(nil)
+
+			if err != nil {
+				t.Fatalf("error creating output file: %v: %v", testCase.env_github_output, err)
+			}
+
+			if actual != testCase.isSuccess {
+				t.Fatalf("expected %v but got %v", testCase.isSuccess, actual)
+			}
+
+			if actual == true {
+				if _, err := os.Stat(testCase.env_github_output); errors.Is(err, os.ErrNotExist) {
+					t.Fatalf("expected create output file %v but it was not", testCase.env_github_output)
+				}
 			}
 		})
 	}

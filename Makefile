@@ -1,20 +1,25 @@
 IMAGE_REPO=ghcr.io/trstringer/manual-approval
+TARGET_PLATFORM=linux/amd64
+
+.PHONY: tidy
+tidy:
+	go mod tidy
 
 .PHONY: build
 build:
-	@if [ -z "$$VERSION" ]; then \
+	@if [ -z "$(VERSION)" ]; then \
 		echo "VERSION is required"; \
 		exit 1; \
 	fi
-	docker build -t $(IMAGE_REPO):$$VERSION .
+	docker build --platform $(TARGET_PLATFORM) -t $(IMAGE_REPO):$$VERSION .
 
 .PHONY: push
 push:
-	@if [ -z "$$VERSION" ]; then \
+	@if [ -z "$(VERSION)" ]; then \
 		echo "VERSION is required"; \
 		exit 1; \
 	fi
-	docker push $(IMAGE_REPO):$$VERSION
+	docker push $(IMAGE_REPO):$(VERSION)
 
 .PHONY: test
 test:
