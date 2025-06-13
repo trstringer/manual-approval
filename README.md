@@ -182,6 +182,7 @@ For more information on permissions, please look at the [GitHub documentation](h
 * Expirations (also mentioned elsewhere in this document):
   * A job (including a paused job) will be failed [after 6 hours, and a workflow will be failed after 35 days](https://docs.github.com/en/actions/learn-github-actions/usage-limits-billing-and-administration#usage-limits).
   * GitHub App tokens expire after 1 hour which implies duration for the approval cannot exceed 60 minutes or the job will fail due to bad credentials. See [docs](https://docs.github.com/en/rest/apps/apps#create-an-installation-access-token-for-an-app)
+* Adding a GH team instead of a user won't circumvent the issue of having a maximum of 10 assignees, github doesn't allow assigning an issue to a team but only to a user.
 
 ## Development
 
