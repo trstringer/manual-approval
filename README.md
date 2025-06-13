@@ -32,6 +32,12 @@ In all cases, `manual-approval` will close the initial GitHub issue.
 - Windows/amd64 — 64-bit Windows systems are currently not supported.
 - Non-Linux runners of any architecture.
 
+# v1.9.x → v1.10.0
+🚨 Update: Approval Issue Content Handling 🚨  
+Starting from v1.10.0, the behaviour for issue contents has changed:
+- The issue-body and issue-body-file-path are now added as comments on the issue instead of being set as the issue’s main description/body.
+- The issue title is now exactly what is provided as input, instead of being appended to or wrapped in a predefined string.
+
 ## Usage
 
 ```yaml
@@ -65,7 +71,8 @@ steps:
 > 2. When using issue-body, the content string is passed as an arguent which is limited by github at 10kb. For content >= 10kb, use files for passing the issue body. 
 
 > [!CAUTION]
-> When using file please make sure that the file size remains under 125 KB (A safe limit, to stay under the threshold), If the file size is huge then the file content will be broken into a lot chunks representing an issue comment each, With theese many api requests the API rate limit is exceeded and the actions will be temporarily blocked resulting in an error message like: `403 You have exceeded a secondary rate limit and have been temporarily blocked from content creation. Please retry your request again later.`  
+> When using file please make sure that the file size remains under 125 KB (A safe limit, to stay under the threshold), If the file size is huge then the file content will be broken into a lot chunks representing an issue comment each, With theese many api requests the API rate limit is exceeded and the actions will be temporarily blocked resulting in an error message like: `403 You have exceeded a secondary rate limit and have been temporarily blocked from content creation. Please retry your request again later.`
+>
 > 5 MB is a crude estimate as secondary rate limits apply to a user so your user (usually the bot using app token for authentication) will not be able to do anything for some time. Primary limit might still reset quickly but secondary limits will need some cool-off time.
 
 
@@ -98,12 +105,6 @@ steps:
 
 GitHub has a rich library of emojis, and these all work in additional approved words or denied words.  Some values GitHub will store in their text version - i.e. `:shipit:`. Other emojis, GitHub will store in their unicode emoji form, like ✅.
 For a seamless experience, it is recommended that you add the custom words to a GitHub comment, and then copy it back out of the comment into your actions configuration yaml.
-
-# v1.9.x → v1.10.0
-🚨 Update: Approval Issue Content Handling 🚨
-Starting from v1.10.0, the behaviour for issue contents has changed:
-- The issue-body and issue-body-file-path are now added as comments on the issue instead of being set as the issue’s main description/body.
-- The issue title is now exactly what is provided as input, instead of being appended to or wrapped in a predefined string.
 
 ## Org team approver
 
