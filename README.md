@@ -65,7 +65,7 @@ steps:
 > 2. When using issue-body, the content string is passed as an arguent which is limited by github at 10kb. For content >= 10kb, use files for passing the issue body. 
 
 > [!CAUTION]
-> When using file please make sure that the file size remains under 125 KB (A safe limit, to stay under the threshold), If the file size is huge then the file content will be broken into a lot chunks representing an issue comment each, With theese many api requests the API rate limit is exceeded and the actions will be temporarily blocked resulting in an error message like: `403 You have exceeded a secondary rate limit and have been temporarily blocked from content creation. Please retry your request again later.`
+> When using file please make sure that the file size remains under 125 KB (A safe limit, to stay under the threshold), If the file size is huge then the file content will be broken into a lot chunks representing an issue comment each, With theese many api requests the API rate limit is exceeded and the actions will be temporarily blocked resulting in an error message like: `403 You have exceeded a secondary rate limit and have been temporarily blocked from content creation. Please retry your request again later.`  
 > 5 MB is a crude estimate as secondary rate limits apply to a user so your user (usually the bot using app token for authentication) will not be able to do anything for some time. Primary limit might still reset quickly but secondary limits will need some cool-off time.
 
 
