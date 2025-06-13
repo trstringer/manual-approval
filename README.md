@@ -30,7 +30,7 @@ In all cases, `manual-approval` will close the initial GitHub issue.
 
 🚫 Unsupported
 - Windows/amd64 — 64-bit Windows systems are currently not supported.
-- Non-Linux GitHub-hosted runners of any architecture.
+- Non-Linux runners of any architecture.
 
 ## Usage
 
