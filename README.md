@@ -108,7 +108,7 @@ For a seamless experience, it is recommended that you add the custom words to a 
 
 ## Org team approver
 
-If you want to have `approvers` set to an org team, then you need to take a different approach. The default [GitHub Actions automatic token](https://docs.github.com/en/actions/security-guides/automatic-token-authentication#permissions-for-the-github_token) does not have the necessary permissions to list out team members. If you would like to use this then you need to generate a token from a GitHub App with the correct set of permissions.
+If you want to have `approvers` set to an org team, then you need to take a different approach. The default [GitHub Actions automatic token](https://docs.github.com/en/actions/security-guides/automatic-token-authentication#permissions-for-the-github_token) does not have the necessary permissions to list out team members. If you would like to use this then you need to generate a token from a GitHub App with the correct set of permissions. Apart from this the GH app will also need the Issue: Read & Write role.
 
 Create a GitHub App with **read-only access to organization members**. Once the app is created, add a repo secret with the app ID. In the GitHub App settings, generate a private key and add that as a secret in the repo as well. You can get the app token by using the [`tibdex/github-app-token`](https://github.com/tibdex/github-app-token) GitHub Action:
 
@@ -182,6 +182,7 @@ For more information on permissions, please look at the [GitHub documentation](h
 * Expirations (also mentioned elsewhere in this document):
   * A job (including a paused job) will be failed [after 6 hours, and a workflow will be failed after 35 days](https://docs.github.com/en/actions/learn-github-actions/usage-limits-billing-and-administration#usage-limits).
   * GitHub App tokens expire after 1 hour which implies duration for the approval cannot exceed 60 minutes or the job will fail due to bad credentials. See [docs](https://docs.github.com/en/rest/apps/apps#create-an-installation-access-token-for-an-app)
+* Adding a GH team instead of a user won't circumvent the issue of having a maximum of 10 assignees, github doesn't allow assigning an issue to a team but only to a user.
 
 ## Development
 
