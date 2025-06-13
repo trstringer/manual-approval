@@ -43,6 +43,7 @@ steps:
       minimum-approvals: 1
       issue-title: "Deploying v1.3.5 to prod from staging"
       issue-body: "Please approve or deny the deployment of version v1.3.5."
+      issue-body-file-path: relative/file_path/wrt/repo/root
       exclude-workflow-initiator-as-approver: false
       fail-on-denial: true
       additional-approved-words: ''
@@ -51,12 +52,24 @@ steps:
 
 * `approvers` is a comma-delimited list of all required approvers. An approver can either be a user or an org team. (*Note: Required approvers must have the ability to be set as approvers in the repository. If you add an approver that doesn't have this permission then you would receive an HTTP/402 Validation Failed error when running this action*)
 * `minimum-approvals` is an integer that sets the minimum number of approvals required to progress the workflow. Defaults to ALL approvers.
-* `issue-title` is a string that will be appended to the title of the issue.
-* `issue-body` is a string that will be prepended to the body of the issue.
+* `issue-title` is a string that will be used as the title of the approval-issue.
+* `issue-body` is a string that will be added as comments on the approval-issue.
+* `issue-body-file-path` is a string which is the file path, this file's content will be added as comments on the approval-issue. If both issue-body and issue-body-file-path are given then the file contents are considered for issue comments. 
 * `exclude-workflow-initiator-as-approver` is a boolean that indicates if the workflow initiator (determined by the `GITHUB_ACTOR` environment variable) should be filtered from the final list of approvers. This is optional and defaults to `false`. Set this to `true` to prevent users in the `approvers` list from being able to self-approve workflows.
 * `fail-on-denial` is a boolean that indicates if the workflow should fail if any approver denies the approval. This is optional and defaults to `true`. Set this to `false` to allow the workflow to continue if any approver denies the approval.
 * `additional-approved-words` is a comma separated list of strings to expand the dictionary of words that indicate approval. This is optional and defaults to an empty string.
 * `additional-denied-words` is a comma separated list of strings to expand the dictionary of words that indicate denial. This is optional and defaults to an empty string.
+
+> [!Note]
+> 1. If You are using issue-body-file-path then please make sure the file is reachable, for example, idf the file is in your repo then please checkout to your repo in the same job as the approval issue.
+> 2. When using issue-body, the content string is passed as an arguent which is limited by github at 10kb. For content >= 10kb, use files for passing the issue body. 
+
+> [!CAUTION]
+> When using file please make sure that the file size remains under 125 KB (A safe limit, to stay under the threshold), If the file size is huge then the file content will be broken into a lot chunks representing an issue comment each, With theese many api requests the API rate limit is exceeded and the actions will be temporarily blocked resulting in an error message like: `403 You have exceeded a secondary rate limit and have been temporarily blocked from content creation. Please retry your request again later.`  
+> 5 MB is a crude estimate as secondary rate limits apply to a user so your user (usually the bot using app token for authentication) will not be able to do anything for some time. Primary limit might still reset quickly but secondary limits will need some cool-off time.
+
+
+The file method works unless the file itself is very big that after breaking it into chunks of 65k characters, it exceeds the API limit
 
 ### Outputs
 

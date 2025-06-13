@@ -14,7 +14,7 @@ build:
 	docker build -t $(IMAGE_REPO):$(VERSION) .
 
 .PHONY: build_push
-push:
+build_push:
 	@if [ -z "$(VERSION)" ]; then \
 		echo "VERSION is required"; \
 		exit 1; \
