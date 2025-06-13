@@ -19,18 +19,41 @@ inputs:
   issue-body:
     description: The custom body for the issue
     required: false
+  issue-body-file-path:
+    description: The file path to a custom body for the issue
+    required: false
   exclude-workflow-initiator-as-approver:
     description: Whether or not to filter out the user who initiated the workflow as an approver if they are in the approvers list
-    default: false
+    required: false
+    default: 'false'
   additional-approved-words:
     description: Comma separated list of words that can be used to approve beyond the defaults.
+    required: false
     default: ''
   additional-denied-words:
     description: Comma separated list of words that can be used to deny beyond the defaults.
+    required: false
     default: ''
+  target-repository-owner:
+    description: Owner of the repository in which the issue will be created.
+    default: ''
+  target-repository:
+    description: Name of the repository in which the issue will be created.
+    default: ''
+  fail-on-denial:
+    description: Whether or not to fail the workflow if the approval is denied
+    required: false
+    default: 'true'
   labels:
     description: Issue labels
     default: ''
+outputs:
+  issue-number:
+    description: The number of the issue created
+  issue-url:
+    description: The URL of the issue created
+  approval-status:
+    description: The status of the approval ("approved" or "denied")
 runs:
   using: docker
-  image: docker://ghcr.io/trstringer/manual-approval:1.10.0
+  image: docker://ghcr.io/trstringer/manual-approval:1.11.0

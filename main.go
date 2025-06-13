@@ -16,15 +16,16 @@ import (
 func handleInterrupt(ctx context.Context, client *github.Client, apprv *approvalEnvironment) {
 	newState := "closed"
 	closeComment := "Workflow cancelled, closing issue."
+
 	fmt.Println(closeComment)
-	_, _, err := client.Issues.CreateComment(ctx, apprv.repoOwner, apprv.repo, apprv.approvalIssueNumber, &github.IssueComment{
+	_, _, err := client.Issues.CreateComment(ctx, apprv.targetRepoOwner, apprv.targetRepoName, apprv.approvalIssueNumber, &github.IssueComment{
 		Body: &closeComment,
 	})
 	if err != nil {
 		fmt.Printf("error commenting on issue: %v\n", err)
 		return
 	}
-	_, _, err = client.Issues.Edit(ctx, apprv.repoOwner, apprv.repo, apprv.approvalIssueNumber, &github.IssueRequest{State: &newState})
+	_, _, err = client.Issues.Edit(ctx, apprv.targetRepoOwner, apprv.targetRepoName, apprv.approvalIssueNumber, &github.IssueRequest{State: &newState})
 	if err != nil {
 		fmt.Printf("error closing issue: %v\n", err)
 		return
@@ -35,7 +36,7 @@ func newCommentLoopChannel(ctx context.Context, apprv *approvalEnvironment, clie
 	channel := make(chan int)
 	go func() {
 		for {
-			comments, _, err := client.Issues.ListComments(ctx, apprv.repoOwner, apprv.repo, apprv.approvalIssueNumber, &github.IssueListCommentsOptions{})
+			comments, _, err := client.Issues.ListComments(ctx, apprv.targetRepoOwner, apprv.targetRepoName, apprv.approvalIssueNumber, &github.IssueListCommentsOptions{})
 			if err != nil {
 				fmt.Printf("error getting comments: %v\n", err)
 				channel <- 1
@@ -52,8 +53,8 @@ func newCommentLoopChannel(ctx context.Context, apprv *approvalEnvironment, clie
 			switch approved {
 			case approvalStatusApproved:
 				newState := "closed"
-				closeComment := "All approvers have approved, continuing workflow and closing this issue."
-				_, _, err := client.Issues.CreateComment(ctx, apprv.repoOwner, apprv.repo, apprv.approvalIssueNumber, &github.IssueComment{
+				closeComment := fmt.Sprintf("The required number of approvals (%d) has been met; continuing workflow and closing this issue.", apprv.minimumApprovals)
+				_, _, err := client.Issues.CreateComment(ctx, apprv.targetRepoOwner, apprv.targetRepoName, apprv.approvalIssueNumber, &github.IssueComment{
 					Body: &closeComment,
 				})
 				if err != nil {
@@ -61,7 +62,7 @@ func newCommentLoopChannel(ctx context.Context, apprv *approvalEnvironment, clie
 					channel <- 1
 					close(channel)
 				}
-				_, _, err = client.Issues.Edit(ctx, apprv.repoOwner, apprv.repo, apprv.approvalIssueNumber, &github.IssueRequest{State: &newState})
+				_, _, err = client.Issues.Edit(ctx, apprv.targetRepoOwner, apprv.targetRepoName, apprv.approvalIssueNumber, &github.IssueRequest{State: &newState})
 				if err != nil {
 					fmt.Printf("error closing issue: %v\n", err)
 					channel <- 1
@@ -72,8 +73,15 @@ func newCommentLoopChannel(ctx context.Context, apprv *approvalEnvironment, clie
 				close(channel)
 			case approvalStatusDenied:
 				newState := "closed"
-				closeComment := "Request denied. Closing issue and failing workflow."
-				_, _, err := client.Issues.CreateComment(ctx, apprv.repoOwner, apprv.repo, apprv.approvalIssueNumber, &github.IssueComment{
+				closeComment := "Request denied. Closing issue "
+				if !apprv.failOnDenial {
+					closeComment += "but continuing"
+				} else {
+					closeComment += "and failing"
+				}
+				closeComment += " workflow."
+
+				_, _, err := client.Issues.CreateComment(ctx, apprv.targetRepoOwner, apprv.targetRepoName, apprv.approvalIssueNumber, &github.IssueComment{
 					Body: &closeComment,
 				})
 				if err != nil {
@@ -81,7 +89,7 @@ func newCommentLoopChannel(ctx context.Context, apprv *approvalEnvironment, clie
 					channel <- 1
 					close(channel)
 				}
-				_, _, err = client.Issues.Edit(ctx, apprv.repoOwner, apprv.repo, apprv.approvalIssueNumber, &github.IssueRequest{State: &newState})
+				_, _, err = client.Issues.Edit(ctx, apprv.targetRepoOwner, apprv.targetRepoName, apprv.approvalIssueNumber, &github.IssueRequest{State: &newState})
 				if err != nil {
 					fmt.Printf("error closing issue: %v\n", err)
 					channel <- 1
@@ -150,6 +158,9 @@ func main() {
 		os.Exit(1)
 	}
 
+	targetRepoName := os.Getenv(envVarTargetRepo)
+	targetRepoOwner := os.Getenv(envVarTargetRepoOwner)
+
 	repoFullName := os.Getenv(envVarRepoFullName)
 	runID, err := strconv.Atoi(os.Getenv(envVarRunID))
 	if err != nil {
@@ -157,6 +168,12 @@ func main() {
 		os.Exit(1)
 	}
 	repoOwner := os.Getenv(envVarRepoOwner)
+
+	if targetRepoName == "" || targetRepoOwner == "" {
+		parts := strings.SplitN(repoFullName, "/", 2)
+		targetRepoOwner = parts[0]
+		targetRepoName = parts[1]
+	}
 
 	ctx := context.Background()
 	client, err := newGithubClient(ctx)
@@ -171,9 +188,31 @@ func main() {
 		os.Exit(1)
 	}
 
+	failOnDenial := true
+	failOnDenialRaw := os.Getenv(envVarFailOnDenial)
+	if failOnDenialRaw != "" {
+		failOnDenial, err = strconv.ParseBool(failOnDenialRaw)
+		if err != nil {
+			fmt.Printf("error parsing fail on denial: %v\n", err)
+			os.Exit(1)
+		}
+	}
+
 	issueTitle := os.Getenv(envVarIssueTitle)
-	issueBody := os.Getenv(envVarIssueBody)
+	var issueBody string
+	if os.Getenv(envVarIssueBodyFilePath) != "" {
+		fileContents, err := os.ReadFile(os.Getenv(envVarIssueBodyFilePath))
+		if err != nil {
+			fmt.Printf("error reading issue body file: %v\n", err)
+			os.Exit(1)
+		}
+		issueBody = string(fileContents)
+	} else {
+		issueBody = os.Getenv(envVarIssueBody)
+	}
+
 	labels := os.Getenv(envVarLabels)
+  
 	minimumApprovalsRaw := os.Getenv(envVarMinimumApprovals)
 	minimumApprovals := 0
 	if minimumApprovalsRaw != "" {
@@ -183,7 +222,9 @@ func main() {
 			os.Exit(1)
 		}
 	}
-	apprv, err := newApprovalEnvironment(client, repoFullName, repoOwner, runID, approvers, minimumApprovals, issueTitle, issueBody, strings.Split(labels, ","))
+
+	apprv, err := newApprovalEnvironment(client, repoFullName, repoOwner, runID, approvers, minimumApprovals, issueTitle, issueBody, targetRepoOwner, targetRepoName, failOnDenial, strings.Split(labels, ","))
+
 	if err != nil {
 		fmt.Printf("error creating approval environment: %v\n", err)
 		os.Exit(1)
@@ -195,6 +236,16 @@ func main() {
 		os.Exit(1)
 	}
 
+	outputs := map[string]string {
+		"issue-number": fmt.Sprintf("%d", apprv.approvalIssueNumber),
+		"issue-url": apprv.approvalIssue.GetHTMLURL(),
+	}
+	_, err = apprv.SetActionOutputs(outputs)
+	if err != nil {
+		fmt.Printf("error saving output: %v", err)
+		os.Exit(1)
+	}
+
 	killSignalChannel := make(chan os.Signal, 1)
 	signal.Notify(killSignalChannel, os.Interrupt)
 
@@ -202,6 +253,23 @@ func main() {
 
 	select {
 	case exitCode := <-commentLoopChannel:
+		approvalStatus := ""
+
+		if (!failOnDenial && exitCode == 1) {
+			approvalStatus = "denied"
+			exitCode = 0
+		} else if (exitCode == 1) {
+			approvalStatus = "denied"
+		} else {
+			approvalStatus = "approved"
+		}
+		outputs := map[string]string {
+			"approval-status": approvalStatus,
+		}
+		if _, err := apprv.SetActionOutputs(outputs); err != nil {
+			fmt.Printf("error setting action output: %v\n", err)
+			exitCode = 1
+		}
 		os.Exit(exitCode)
 	case <-killSignalChannel:
 		handleInterrupt(ctx, client, apprv)
