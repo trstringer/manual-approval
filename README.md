@@ -23,6 +23,15 @@ These are case insensitive with optional punctuation either a period or an excla
 
 In all cases, `manual-approval` will close the initial GitHub issue.
 
+🖥️ Supported Runners, The action is compatible with the following runner types:
+- Linux/amd64 — 64-bit Intel/AMD (x86_64)
+- Linux/arm64 — 64-bit ARM (Apple M1)
+- Linux/arm/v8 — 64-bit ARM
+
+🚫 Unsupported
+- Windows/amd64 — 64-bit Windows systems are currently not supported.
+- Non-Linux runners of any architecture.
+
 ## Usage
 
 ```yaml
@@ -108,7 +117,9 @@ jobs:
 
 If you'd like to force a timeout of your workflow pause, you can specify `timeout-minutes` at either the [step](https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idstepstimeout-minutes) level or the [job](https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idtimeout-minutes) level.
 
-> **Note:** The `timeout-minutes` option has been removed from the `manual-approval` inputs, as it did nothing and incorrectly assured users that they were in fact
+> [!Note]
+>
+> The `timeout-minutes` option has been removed from the `manual-approval` inputs, as it did nothing and incorrectly assured users that they were in fact
 > getting timeout behavior.  Please use one of the below two approaches instead.
 >
 > If you are currently using `timeout-minutes` as a `manual-approval` input, you may see a warning, but this will not break your action.
@@ -198,11 +209,10 @@ For `uses`, this should point to your repo and dev branch.
 
 ### Create a release
 
-1. Build the new version's image: `$ VERSION=1.7.0 make build`
-2. Push the new image: `$ VERSION=1.7.0 make push`
-3. Create a release branch and modify `action.yaml` to point to the new image
-4. Open and merge a PR to add these changes to the default branch
-5. Make sure to fetch the new changes into your local repo: `$ git checkout main && git fetch origin && git merge origin main`
-6. Delete the `v1` tag locally and remotely: `$ git tag -d v1 && git push --delete origin v1`
-7. Create and push new tags: `$ git tag v1.7.0 && git tag v1 && git push origin --tags`
-8. Create the GitHub project release
+1. Build and push the new image: `$ VERSION=1.7.0 make build_push`
+2. Create a release branch and modify `action.yaml` to point to the new image
+3. Open and merge a PR to add these changes to the default branch
+4. Make sure to fetch the new changes into your local repo: `$ git checkout main && git fetch origin && git merge origin main`
+5. Delete the `v1` tag locally and remotely: `$ git tag -d v1 && git push --delete origin v1`
+6. Create and push new tags: `$ git tag v1.7.0 && git tag v1 && git push origin --tags`
+7. Create the GitHub project release
