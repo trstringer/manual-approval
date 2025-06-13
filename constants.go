@@ -18,6 +18,7 @@ const (
 	envVarMinimumApprovals                   string = "INPUT_MINIMUM-APPROVALS"
 	envVarIssueTitle                         string = "INPUT_ISSUE-TITLE"
 	envVarIssueBody                          string = "INPUT_ISSUE-BODY"
+	envVarIssueBodyFilePath                  string = "INPUT_ISSUE-BODY-FILE-PATH"
 	envVarExcludeWorkflowInitiatorAsApprover string = "INPUT_EXCLUDE-WORKFLOW-INITIATOR-AS-APPROVER"
 	envVarAdditionalApprovedWords            string = "INPUT_ADDITIONAL-APPROVED-WORDS"
 	envVarAdditionalDeniedWords              string = "INPUT_ADDITIONAL-DENIED-WORDS"

@@ -199,7 +199,17 @@ func main() {
 	}
 
 	issueTitle := os.Getenv(envVarIssueTitle)
-	issueBody := os.Getenv(envVarIssueBody)
+	var issueBody string
+	if os.Getenv(envVarIssueBodyFilePath) != "" {
+		fileContents, err := os.ReadFile(os.Getenv(envVarIssueBodyFilePath))
+		if err != nil {
+			fmt.Printf("error reading issue body file: %v\n", err)
+			os.Exit(1)
+		}
+		issueBody = string(fileContents)
+	} else {
+		issueBody = os.Getenv(envVarIssueBody)
+	}
 	minimumApprovalsRaw := os.Getenv(envVarMinimumApprovals)
 	minimumApprovals := 0
 	if minimumApprovalsRaw != "" {
