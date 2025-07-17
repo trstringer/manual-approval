@@ -5,7 +5,7 @@
 
 Pause a GitHub Actions workflow and require manual approval from one or more approvers before continuing.
 
-This is a very common feature for a deployment or release pipeline, and while [this functionality is available from GitHub](https://docs.github.com/en/actions/managing-workflow-runs/reviewing-deployments), it requires the use of environments and if you want to use this for private repositories, then you need GitHub Enterprise. This action provides manual approval without the use of environments, and is freely available to use on private repositories.
+This is a very common feature for a deployment or release pipeline, and while [this functionality is available from GitHub](https://docs.github.com/en/actions/managing-workflow-runs/reviewing-deployments), it requires the use of environments, and if you want to use this for private repositories, then you need GitHub Enterprise. This action provides manual approval without the use of environments and is freely available to use on private repositories.
 
 *Note: This approval duration is subject to the broader 35 day timeout for a workflow, as well as usage costs. So keep that in mind when figuring out how quickly an approver must respond. See [limitations](#limitations) for more information.*
 
@@ -60,23 +60,23 @@ steps:
 * `minimum-approvals` is an integer that sets the minimum number of approvals required to progress the workflow. Defaults to ALL approvers.
 * `issue-title` is a string that will be used as the title of the approval-issue.
 * `issue-body` is a string that will be added as comments on the approval-issue.
-* `issue-body-file-path` is a string which is the file path, this file's content will be added as comments on the approval-issue. If both issue-body and issue-body-file-path are given then the file contents are considered for issue comments. 
+* `issue-body-file-path` is a string that is the file path, this file's content will be added as comments on the approval-issue. If both issue-body and issue-body-file-path are given, then the file contents are considered for issue comments. 
 * `exclude-workflow-initiator-as-approver` is a boolean that indicates if the workflow initiator (determined by the `GITHUB_ACTOR` environment variable) should be filtered from the final list of approvers. This is optional and defaults to `false`. Set this to `true` to prevent users in the `approvers` list from being able to self-approve workflows.
 * `fail-on-denial` is a boolean that indicates if the workflow should fail if any approver denies the approval. This is optional and defaults to `true`. Set this to `false` to allow the workflow to continue if any approver denies the approval.
 * `additional-approved-words` is a comma separated list of strings to expand the dictionary of words that indicate approval. This is optional and defaults to an empty string.
 * `additional-denied-words` is a comma separated list of strings to expand the dictionary of words that indicate denial. This is optional and defaults to an empty string.
 
 > [!Note]
-> 1. If You are using issue-body-file-path then please make sure the file is reachable, for example, idf the file is in your repo then please checkout to your repo in the same job as the approval issue.
+> 1. If You are using issue-body-file-path then please make sure the file is reachable; for example, if the file is in your repo, then please checkout to your repo in the same job as the approval issue.
 > 2. When using issue-body, the content string is passed as an arguent which is limited by github at 10kb. For content >= 10kb, use files for passing the issue body. 
 
 > [!CAUTION]
-> When using file please make sure that the file size remains under 125 KB (A safe limit, to stay under the threshold), If the file size is huge then the file content will be broken into a lot chunks representing an issue comment each, With theese many api requests the API rate limit is exceeded and the actions will be temporarily blocked resulting in an error message like: `403 You have exceeded a secondary rate limit and have been temporarily blocked from content creation. Please retry your request again later.`
+> When using a file please make sure that the file size remains under 125 KB (a safe limit, to stay under the threshold). If the file size is huge, then the file content will be broken into multiple chunks, each representing an issue comment. With this many API requests the API rate limit is exceeded, and the actions will be temporarily blocked, resulting in an error message like: `403 You have exceeded a secondary rate limit and have been temporarily blocked from content creation. Please retry your request again later.`
 >
-> 5 MB is a crude estimate as secondary rate limits apply to a user so your user (usually the bot using app token for authentication) will not be able to do anything for some time. Primary limit might still reset quickly but secondary limits will need some cool-off time.
+> 5 MB is a crude estimate, as secondary rate limits apply to a user, so your user (usually the bot using an app token for authentication) will not be able to do anything for some time. Primary limits might still reset quickly, but secondary limits will need some cool-off time.
 
 
-The file method works unless the file itself is very big that after breaking it into chunks of 65k characters, it exceeds the API limit
+The file method works unless the file itself is so big that after breaking it into chunks of 65k characters, it exceeds the API limit.
 
 ### Outputs
 
@@ -99,20 +99,20 @@ steps:
       target-repository: repository-name
       target-repository-owner: owner-id
 ```
-- if either of `target-repository` or `target-repository-owner` is missing or is an empty string then the issue will be created in the same repository where this step is used.
+- If either of `target-repository` or `target-repository-owner` is missing or is an empty string, then the issue will be created in the same repository where this step is used.
 
 ### Using Custom Words
 
-GitHub has a rich library of emojis, and these all work in additional approved words or denied words.  Some values GitHub will store in their text version - i.e. `:shipit:`. Other emojis, GitHub will store in their unicode emoji form, like ✅.
-For a seamless experience, it is recommended that you add the custom words to a GitHub comment, and then copy it back out of the comment into your actions configuration yaml.
+GitHub has a rich library of emojis, and these all work in additional approved words or denied words.  Some values GitHub will store in their text version - i.e. `:shipit:`. Other emojis, GitHub will store in their Unicode emoji form, like ✅.
+For a seamless experience, it is recommended that you add the custom words to a GitHub comment, and then copy it back out of the comment into your actions configuration YAML.
 
 ## Org team approver
 
-If you want to have `approvers` set to an org team, then you need to take a different approach. The default [GitHub Actions automatic token](https://docs.github.com/en/actions/security-guides/automatic-token-authentication#permissions-for-the-github_token) does not have the necessary permissions to list out team members. If you would like to use this then you need to generate a token from a GitHub App with the correct set of permissions. Apart from this the GH app will also need the Issue: Read & Write role.
+If you want to have `approvers` set to an org team, then you need to take a different approach. The default [GitHub Actions automatic token](https://docs.github.com/en/actions/security-guides/automatic-token-authentication#permissions-for-the-github_token) does not have the necessary permissions to list out team members. If you would like to use this, then you need to generate a token from a GitHub App with the correct set of permissions. Apart from this, the GH app will also need the Issue: Read & Write role.
 
 Create a GitHub App with **read-only access to organization members**. Once the app is created, add a repo secret with the app ID. In the GitHub App settings, generate a private key and add that as a secret in the repo as well. You can get the app token by using the [`tibdex/github-app-token`](https://github.com/tibdex/github-app-token) GitHub Action:
 
-*Note: The GitHub App tokens expire after 1 hour which implies duration for the approval cannot exceed 60 minutes or the job will fail due to bad credentials. See [docs](https://docs.github.com/en/rest/apps/apps#create-an-installation-access-token-for-an-app).*
+*Note: The GitHub App tokens expire after 1 hour, which implies the duration for the approval cannot exceed 60 minutes, or the job will fail due to bad credentials. See [docs](https://docs.github.com/en/rest/apps/apps#create-an-installation-access-token-for-an-app).*
 
 ```yaml
 jobs:
@@ -144,7 +144,7 @@ If you'd like to force a timeout of your workflow pause, you can specify `timeou
 >
 > If you are currently using `timeout-minutes` as a `manual-approval` input, you may see a warning, but this will not break your action.
 
-For instance, if you want your manual approval step to timeout after an hour you could do the following:
+For instance, if you want your manual approval step to timeout after an hour, you could do the following:
 
 ```yaml
 jobs:
@@ -181,14 +181,14 @@ For more information on permissions, please look at the [GitHub documentation](h
 * A paused job is still running compute/instance/virtual machine and will continue to incur costs.
 * Expirations (also mentioned elsewhere in this document):
   * A job (including a paused job) will be failed [after 6 hours, and a workflow will be failed after 35 days](https://docs.github.com/en/actions/learn-github-actions/usage-limits-billing-and-administration#usage-limits).
-  * GitHub App tokens expire after 1 hour which implies duration for the approval cannot exceed 60 minutes or the job will fail due to bad credentials. See [docs](https://docs.github.com/en/rest/apps/apps#create-an-installation-access-token-for-an-app)
-* Adding a GH team instead of a user won't circumvent the issue of having a maximum of 10 assignees, github doesn't allow assigning an issue to a team but only to a user.
+  * GitHub App tokens expire after 1 hour, which implies the duration for the approval cannot exceed 60 minutes, or the job will fail due to bad credentials. See [docs](https://docs.github.com/en/rest/apps/apps#create-an-installation-access-token-for-an-app).
+* Adding a GH team instead of a user won't circumvent the issue of having a maximum of 10 assignees, GitHub doesn't allow assigning an issue to a team, only to a user.
 
 ## Development
 
 ### Running test code
 
-To test out your code in an action, you need to build the image and push it to a different container registry repository. For instance, if I want to test some code I won't build the image with the main image repository. Prior to this, comment out the label binding the image to a repo:
+To test out your code in an action, you need to build the image and push it to a different container registry repository. For instance, if I want to test some code, I won't build the image with the main image repository. Prior to this, comment out the label binding the image to a repo:
 
 ```dockerfile
 # LABEL org.opencontainers.image.source https://github.com/trstringer/manual-approval
@@ -208,13 +208,13 @@ Push the image to your container registry:
 VERSION=1.7.1-rc.1 make IMAGE_REPO=ghcr.io/trstringer/manual-approval-test push
 ```
 
-To test out the image you will need to modify `action.yaml` so that it points to your new image that you're testing:
+To test out the image, you will need to modify `action.yaml` so that it points to your new image that you're testing:
 
 ```yaml
   image: docker://ghcr.io/trstringer/manual-approval-test:1.7.0-rc.1
 ```
 
-Then to test out the image, run a workflow specifying your dev branch:
+Then, to test out the image, run a workflow specifying your dev branch:
 
 ```yaml
 - name: Wait for approval
@@ -230,10 +230,10 @@ For `uses`, this should point to your repo and dev branch.
 
 ### Create a release
 
-1. Build and push the new image: `$ VERSION=1.7.0 make build_push`
-2. Create a release branch and modify `action.yaml` to point to the new image
-3. Open and merge a PR to add these changes to the default branch
-4. Make sure to fetch the new changes into your local repo: `$ git checkout main && git fetch origin && git merge origin main`
-5. Delete the `v1` tag locally and remotely: `$ git tag -d v1 && git push --delete origin v1`
-6. Create and push new tags: `$ git tag v1.7.0 && git tag v1 && git push origin --tags`
-7. Create the GitHub project release
+1. Build and push the new image: `$ VERSION=1.7.0 make build_push`.
+2. Create a release branch and modify `action.yaml` to point to the new image.
+3. Open and merge a PR to add these changes to the default branch.
+4. Make sure to fetch the new changes into your local repo: `$ git checkout main && git fetch origin && git merge origin main`.
+5. Delete the `v1` tag locally and remotely: `$ git tag -d v1 && git push --delete origin v1`.
+6. Create and push new tags: `$ git tag v1.7.0 && git tag v1 && git push origin --tags`.
+7. Create the GitHub project release.
