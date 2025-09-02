@@ -110,7 +110,7 @@ For a seamless experience, it is recommended that you add the custom words to a 
 
 If you want to have `approvers` set to an org team, then you need to take a different approach. The default [GitHub Actions automatic token](https://docs.github.com/en/actions/security-guides/automatic-token-authentication#permissions-for-the-github_token) does not have the necessary permissions to list out team members. If you would like to use this, then you need to generate a token from a GitHub App with the correct set of permissions. Apart from this, the GH app will also need the Issue: Read & Write role.
 
-Create a GitHub App with **read-only access to organization members**. Once the app is created, add a repo secret with the app ID. In the GitHub App settings, generate a private key and add that as a secret in the repo as well. You can get the app token by using the [`tibdex/github-app-token`](https://github.com/tibdex/github-app-token) GitHub Action:
+Create an Organization GitHub App with **read-only access to organization members**. Once the app is created, add a repo secret with the app ID. In the GitHub App settings, generate a private key and add that as a secret in the repo as well. You can get the app token by using the [`actions/create-github-app-token`](https://github.com/actions/create-github-app-token) GitHub Action:
 
 *Note: The GitHub App tokens expire after 1 hour, which implies the duration for the approval cannot exceed 60 minutes, or the job will fail due to bad credentials. See [docs](https://docs.github.com/en/rest/apps/apps#create-an-installation-access-token-for-an-app).*
 
@@ -121,10 +121,10 @@ jobs:
     steps:
       - name: Generate token
         id: generate_token
-        uses: tibdex/github-app-token@v1
+        uses: actions/create-github-app-token@v2
         with:
-          app_id: ${{ secrets.APP_ID }}
-          private_key: ${{ secrets.APP_PRIVATE_KEY }}
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
       - name: Wait for approval
         uses: trstringer/manual-approval@v1
         with:
