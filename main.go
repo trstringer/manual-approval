@@ -32,7 +32,7 @@ func handleInterrupt(ctx context.Context, client *github.Client, apprv *approval
 	}
 }
 
-func newCommentLoopChannel(ctx context.Context, apprv *approvalEnvironment, client *github.Client) chan int {
+func newCommentLoopChannel(ctx context.Context, apprv *approvalEnvironment, client *github.Client, pollingInterval time.Duration) chan int {
 	channel := make(chan int)
 	go func() {
 		for {
@@ -198,6 +198,21 @@ func main() {
 		}
 	}
 
+	pollingInterval := defaultPollingInterval
+	pollingIntervalSecondsRaw := os.Getenv(envVarPollingIntervalSeconds)
+	if pollingIntervalSecondsRaw != "" {
+		pollingIntervalSeconds, err := strconv.Atoi(pollingIntervalSecondsRaw)
+		if err != nil {
+			fmt.Printf("error parsing polling interval: %v\n", err)
+			os.Exit(1)
+		}
+		if pollingIntervalSeconds <= 0 {
+			fmt.Printf("error: polling interval must be greater than 0\n")
+			os.Exit(1)
+		}
+		pollingInterval = time.Duration(pollingIntervalSeconds) * time.Second
+	}
+
 	issueTitle := os.Getenv(envVarIssueTitle)
 	var issueBody string
 	if os.Getenv(envVarIssueBodyFilePath) != "" {
@@ -245,7 +260,7 @@ func main() {
 	killSignalChannel := make(chan os.Signal, 1)
 	signal.Notify(killSignalChannel, os.Interrupt)
 
-	commentLoopChannel := newCommentLoopChannel(ctx, apprv, client)
+	commentLoopChannel := newCommentLoopChannel(ctx, apprv, client, pollingInterval)
 
 	select {
 	case exitCode := <-commentLoopChannel:
