@@ -210,6 +210,9 @@ func main() {
 	} else {
 		issueBody = os.Getenv(envVarIssueBody)
 	}
+
+	labels := os.Getenv(envVarLabels)
+  
 	minimumApprovalsRaw := os.Getenv(envVarMinimumApprovals)
 	minimumApprovals := 0
 	if minimumApprovalsRaw != "" {
@@ -220,7 +223,8 @@ func main() {
 		}
 	}
 
-	apprv, err := newApprovalEnvironment(client, repoFullName, repoOwner, runID, approvers, minimumApprovals, issueTitle, issueBody, targetRepoOwner, targetRepoName, failOnDenial)
+	apprv, err := newApprovalEnvironment(client, repoFullName, repoOwner, runID, approvers, minimumApprovals, issueTitle, issueBody, targetRepoOwner, targetRepoName, failOnDenial, strings.Split(labels, ","))
+
 	if err != nil {
 		fmt.Printf("error creating approval environment: %v\n", err)
 		os.Exit(1)

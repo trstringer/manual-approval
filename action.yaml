@@ -44,6 +44,9 @@ inputs:
     description: Whether or not to fail the workflow if the approval is denied
     required: false
     default: 'true'
+  labels:
+    description: Issue labels
+    default: ''
 outputs:
   issue-number:
     description: The number of the issue created
