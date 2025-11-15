@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	pollingInterval time.Duration = 10 * time.Second
+	defaultPollingInterval time.Duration = 10 * time.Second
 
 	envVarRepoFullName                       string = "GITHUB_REPOSITORY"
 	envVarRunID                              string = "GITHUB_RUN_ID"
@@ -25,6 +25,7 @@ const (
 	envVarFailOnDenial                       string = "INPUT_FAIL-ON-DENIAL"
 	envVarTargetRepoOwner                    string = "INPUT_TARGET-REPOSITORY-OWNER"
 	envVarTargetRepo                         string = "INPUT_TARGET-REPOSITORY"
+	envVarPollingIntervalSeconds             string = "INPUT_POLLING-INTERVAL-SECONDS"
 )
 
 var (
