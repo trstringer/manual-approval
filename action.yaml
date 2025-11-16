@@ -44,6 +44,10 @@ inputs:
     description: Whether or not to fail the workflow if the approval is denied
     required: false
     default: 'true'
+  polling-interval-seconds:
+    description: Number of seconds to wait between polling GitHub API for approval status
+    required: false
+    default: '10'
 outputs:
   issue-number:
     description: The number of the issue created
