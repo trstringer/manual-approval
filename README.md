@@ -82,7 +82,10 @@ The file method works unless the file itself is so big that after breaking it in
 
 ### Outputs
 
+* `issue-number` is a string that indicates the number of the issue created.
+* `issue-url` is a string that indicates the URL of the issue created.
 * `approval-status` is a string that indicates the final status of the approval. This will be either `approved` or `denied`.
+* `issue-responder` is a string that indicates the GitHub username that approved or denied the request.
 
 ### Creating Issues in a different repository
 

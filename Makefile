@@ -1,5 +1,6 @@
 IMAGE_REPO=ghcr.io/trstringer/manual-approval
 TARGET_PLATFORM=linux/amd64,linux/arm64,linux/arm/v8
+GO_DOCKER_IMAGE=golang:1.24
 
 .PHONY: tidy
 tidy:
@@ -27,6 +28,10 @@ build_push:
 .PHONY: test
 test:
 	go test -v .
+
+.PHONY: test_docker
+test_docker:
+	docker run --rm -v $$(pwd):/app -w /app $(GO_DOCKER_IMAGE) sh -c "go mod tidy && go test -v ."
 
 .PHONY: lint
 lint:

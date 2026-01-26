@@ -32,21 +32,27 @@ func handleInterrupt(ctx context.Context, client *github.Client, apprv *approval
 	}
 }
 
-func newCommentLoopChannel(ctx context.Context, apprv *approvalEnvironment, client *github.Client, pollingInterval time.Duration) chan int {
-	channel := make(chan int)
+type commentLoopResult struct {
+	exitCode int
+	responder string
+	status   approvalStatus
+}
+
+func newCommentLoopChannel(ctx context.Context, apprv *approvalEnvironment, client *github.Client, pollingInterval time.Duration) chan commentLoopResult {
+	channel := make(chan commentLoopResult)
 	go func() {
 		for {
 			comments, _, err := client.Issues.ListComments(ctx, apprv.targetRepoOwner, apprv.targetRepoName, apprv.approvalIssueNumber, &github.IssueListCommentsOptions{})
 			if err != nil {
 				fmt.Printf("error getting comments: %v\n", err)
-				channel <- 1
+				channel <- commentLoopResult{exitCode: 1}
 				close(channel)
 			}
 
-			approved, err := approvalFromComments(comments, apprv.issueApprovers, apprv.minimumApprovals)
+			approved, responder, err := approvalFromComments(comments, apprv.issueApprovers, apprv.minimumApprovals)
 			if err != nil {
 				fmt.Printf("error getting approval from comments: %v\n", err)
-				channel <- 1
+				channel <- commentLoopResult{exitCode: 1}
 				close(channel)
 			}
 			fmt.Printf("Workflow status: %s\n", approved)
@@ -59,16 +65,16 @@ func newCommentLoopChannel(ctx context.Context, apprv *approvalEnvironment, clie
 				})
 				if err != nil {
 					fmt.Printf("error commenting on issue: %v\n", err)
-					channel <- 1
+					channel <- commentLoopResult{exitCode: 1}
 					close(channel)
 				}
 				_, _, err = client.Issues.Edit(ctx, apprv.targetRepoOwner, apprv.targetRepoName, apprv.approvalIssueNumber, &github.IssueRequest{State: &newState})
 				if err != nil {
 					fmt.Printf("error closing issue: %v\n", err)
-					channel <- 1
+					channel <- commentLoopResult{exitCode: 1}
 					close(channel)
 				}
-				channel <- 0
+				channel <- commentLoopResult{exitCode: 0, responder: responder, status: approvalStatusApproved}
 				fmt.Println("Workflow manual approval completed")
 				close(channel)
 			case approvalStatusDenied:
@@ -86,16 +92,16 @@ func newCommentLoopChannel(ctx context.Context, apprv *approvalEnvironment, clie
 				})
 				if err != nil {
 					fmt.Printf("error commenting on issue: %v\n", err)
-					channel <- 1
+					channel <- commentLoopResult{exitCode: 1}
 					close(channel)
 				}
 				_, _, err = client.Issues.Edit(ctx, apprv.targetRepoOwner, apprv.targetRepoName, apprv.approvalIssueNumber, &github.IssueRequest{State: &newState})
 				if err != nil {
 					fmt.Printf("error closing issue: %v\n", err)
-					channel <- 1
+					channel <- commentLoopResult{exitCode: 1}
 					close(channel)
 				}
-				channel <- 1
+				channel <- commentLoopResult{exitCode: 1, responder: responder, status: approvalStatusDenied}
 				close(channel)
 			}
 
@@ -263,25 +269,32 @@ func main() {
 	commentLoopChannel := newCommentLoopChannel(ctx, apprv, client, pollingInterval)
 
 	select {
-	case exitCode := <-commentLoopChannel:
+	case result := <-commentLoopChannel:
 		approvalStatus := ""
 
-		if (!failOnDenial && exitCode == 1) {
+		if result.status == approvalStatusApproved {
+			approvalStatus = "approved"
+		} else if result.status == approvalStatusDenied {
 			approvalStatus = "denied"
-			exitCode = 0
-		} else if (exitCode == 1) {
+		} else if (!failOnDenial && result.exitCode == 1) {
+			approvalStatus = "denied"
+		} else if (result.exitCode == 1) {
 			approvalStatus = "denied"
 		} else {
 			approvalStatus = "approved"
 		}
 		outputs := map[string]string {
 			"approval-status": approvalStatus,
+			"issue-responder": result.responder,
 		}
 		if _, err := apprv.SetActionOutputs(outputs); err != nil {
 			fmt.Printf("error setting action output: %v\n", err)
-			exitCode = 1
+			result.exitCode = 1
 		}
-		os.Exit(exitCode)
+		if !failOnDenial && result.exitCode == 1 {
+			result.exitCode = 0
+		}
+		os.Exit(result.exitCode)
 	case <-killSignalChannel:
 		handleInterrupt(ctx, client, apprv)
 		os.Exit(1)
