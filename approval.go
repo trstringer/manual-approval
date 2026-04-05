@@ -11,21 +11,21 @@ import (
 )
 
 type approvalEnvironment struct {
-	client                      *github.Client
-	repoFullName                string
-	repo                        string
-	repoOwner                   string
-	runID                       int
-	approvalIssue               *github.Issue
-	approvalIssueNumber         int
-	issueTitle                  string
-	issueBody                   string
-	issueApprovers              []string
-	minimumApprovals            int
-	targetRepoOwner             string
-	targetRepoName              string
-	failOnDenial                bool
-	closeIssueMeansDenial       bool
+	client                *github.Client
+	repoFullName          string
+	repo                  string
+	repoOwner             string
+	runID                 int
+	approvalIssue         *github.Issue
+	approvalIssueNumber   int
+	issueTitle            string
+	issueBody             string
+	issueApprovers        []string
+	minimumApprovals      int
+	targetRepoOwner       string
+	targetRepoName        string
+	failOnDenial          bool
+	closeIssueMeansDenial bool
 }
 
 func newApprovalEnvironment(client *github.Client, repoFullName, repoOwner string, runID int, approvers []string, minimumApprovals int, issueTitle, issueBody string, targetRepoOwner string, targetRepoName string, failOnDenial bool, closeIssueMeansDenial bool) (*approvalEnvironment, error) {
