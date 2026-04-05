@@ -48,6 +48,12 @@ inputs:
     description: Number of seconds to wait between polling GitHub API for approval status
     required: false
     default: '10'
+  close-issue-means-denial:
+    description: >
+      If true, closing the approval issue without an explicit approval
+      comment will be treated as a denial. Disabled by default.
+    required: false
+    default: "false"
 outputs:
   issue-number:
     description: The number of the issue created
@@ -57,4 +63,4 @@ outputs:
     description: The status of the approval ("approved" or "denied")
 runs:
   using: docker
-  image: docker://ghcr.io/trstringer/manual-approval:1.12.0
+  image: docker://ghcr.io/snskarora/manual-approval:latest

@@ -1,4 +1,5 @@
-IMAGE_REPO=ghcr.io/trstringer/manual-approval
+IMAGE_REPO=ghcr.io/snskarora/manual-approval
+VERSION=latest
 TARGET_PLATFORM=linux/amd64,linux/arm64,linux/arm/v8
 
 .PHONY: tidy

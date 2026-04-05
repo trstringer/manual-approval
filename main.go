@@ -97,6 +97,51 @@ func newCommentLoopChannel(ctx context.Context, apprv *approvalEnvironment, clie
 				}
 				channel <- 1
 				close(channel)
+			case approvalStatusPending:
+				if apprv.closeIssueMeansDenial {
+					issue, _, err := client.Issues.Get(
+
+						ctx,
+						apprv.targetRepoOwner,
+						apprv.targetRepoName,
+						apprv.approvalIssueNumber,
+					)
+					if err != nil {
+						fmt.Printf("error fetching issue state: %v\n", err)
+						channel <- 1
+						close(channel)
+
+						return
+					}
+
+					if issue.GetState() == "closed" {
+
+						// Issue was closed externally without any approval/denial comment.
+						// Treat as denial per user configuration.
+						denyComment := "Issue was closed without approval. Treating closure as denial"
+
+						if !apprv.failOnDenial {
+							denyComment += " but continuing workflow."
+						} else {
+							denyComment += " and failing workflow."
+						}
+						fmt.Println(denyComment)
+						// Issue is already closed — add comment only, skip re-closing
+						_, _, err := client.Issues.CreateComment(
+							ctx,
+							apprv.targetRepoOwner,
+							apprv.targetRepoName,
+							apprv.approvalIssueNumber,
+							&github.IssueComment{Body: &denyComment},
+						)
+						if err != nil {
+							fmt.Printf("error commenting on closed issue: %v\n", err)
+						}
+						channel <- 1
+						close(channel)
+						return
+					}
+				}
 			}
 
 			time.Sleep(pollingInterval)
@@ -198,6 +243,16 @@ func main() {
 		}
 	}
 
+	closeIssueMeansDenial := false
+	closeIssueMeansDenialRaw := os.Getenv(envVarCloseIssueMeansDenial)
+	if closeIssueMeansDenialRaw != "" {
+		closeIssueMeansDenial, err = strconv.ParseBool(closeIssueMeansDenialRaw)
+		if err != nil {
+			fmt.Printf("error parsing close-issue-means-denial: %v\n", err)
+			os.Exit(1)
+		}
+	}
+
 	pollingInterval := defaultPollingInterval
 	pollingIntervalSecondsRaw := os.Getenv(envVarPollingIntervalSeconds)
 	if pollingIntervalSecondsRaw != "" {
@@ -235,7 +290,7 @@ func main() {
 		}
 	}
 
-	apprv, err := newApprovalEnvironment(client, repoFullName, repoOwner, runID, approvers, minimumApprovals, issueTitle, issueBody, targetRepoOwner, targetRepoName, failOnDenial)
+	apprv, err := newApprovalEnvironment(client, repoFullName, repoOwner, runID, approvers, minimumApprovals, issueTitle, issueBody, targetRepoOwner, targetRepoName, failOnDenial, closeIssueMeansDenial)
 	if err != nil {
 		fmt.Printf("error creating approval environment: %v\n", err)
 		os.Exit(1)
@@ -247,9 +302,9 @@ func main() {
 		os.Exit(1)
 	}
 
-	outputs := map[string]string {
+	outputs := map[string]string{
 		"issue-number": fmt.Sprintf("%d", apprv.approvalIssueNumber),
-		"issue-url": apprv.approvalIssue.GetHTMLURL(),
+		"issue-url":    apprv.approvalIssue.GetHTMLURL(),
 	}
 	_, err = apprv.SetActionOutputs(outputs)
 	if err != nil {
@@ -266,15 +321,15 @@ func main() {
 	case exitCode := <-commentLoopChannel:
 		approvalStatus := ""
 
-		if (!failOnDenial && exitCode == 1) {
+		if !failOnDenial && exitCode == 1 {
 			approvalStatus = "denied"
 			exitCode = 0
-		} else if (exitCode == 1) {
+		} else if exitCode == 1 {
 			approvalStatus = "denied"
 		} else {
 			approvalStatus = "approved"
 		}
-		outputs := map[string]string {
+		outputs := map[string]string{
 			"approval-status": approvalStatus,
 		}
 		if _, err := apprv.SetActionOutputs(outputs); err != nil {
