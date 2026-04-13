@@ -30,4 +30,4 @@ test:
 
 .PHONY: lint
 lint:
-	docker run --rm -v $$(pwd):/app -w /app golangci/golangci-lint:v2.1.6 golangci-lint run -v
+	docker run --rm -v $$(pwd):/app -w /app golangci/golangci-lint:v2.11.4 golangci-lint run -v
