@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"os"
 	"os/signal"
 	"strconv"
@@ -12,6 +13,22 @@ import (
 	"github.com/google/go-github/v43/github"
 	"golang.org/x/oauth2"
 )
+
+// patchIssueState closes or otherwise updates an issue's state without decoding
+// the response body into a github.Issue. go-github's Issues.Edit decodes the
+// response into github.Issue, which fails against Forgejo because its issue
+// response embeds "repository.owner" as a plain string rather than a User object.
+func patchIssueState(ctx context.Context, client *github.Client, owner, repo string, number int, state string) error {
+	req, err := client.NewRequest("PATCH",
+		fmt.Sprintf("repos/%s/%s/issues/%d", owner, repo, number),
+		&github.IssueRequest{State: &state},
+	)
+	if err != nil {
+		return err
+	}
+	_, err = client.Do(ctx, req, nil)
+	return err
+}
 
 func handleInterrupt(ctx context.Context, client *github.Client, apprv *approvalEnvironment) {
 	newState := "closed"
@@ -25,8 +42,7 @@ func handleInterrupt(ctx context.Context, client *github.Client, apprv *approval
 		fmt.Printf("error commenting on issue: %v\n", err)
 		return
 	}
-	_, _, err = client.Issues.Edit(ctx, apprv.targetRepoOwner, apprv.targetRepoName, apprv.approvalIssueNumber, &github.IssueRequest{State: &newState})
-	if err != nil {
+	if err = patchIssueState(ctx, client, apprv.targetRepoOwner, apprv.targetRepoName, apprv.approvalIssueNumber, newState); err != nil {
 		fmt.Printf("error closing issue: %v\n", err)
 		return
 	}
@@ -41,6 +57,7 @@ func newCommentLoopChannel(ctx context.Context, apprv *approvalEnvironment, clie
 				fmt.Printf("error getting comments: %v\n", err)
 				channel <- 1
 				close(channel)
+				return
 			}
 
 			approved, err := approvalFromComments(comments, apprv.issueApprovers, apprv.minimumApprovals)
@@ -48,6 +65,7 @@ func newCommentLoopChannel(ctx context.Context, apprv *approvalEnvironment, clie
 				fmt.Printf("error getting approval from comments: %v\n", err)
 				channel <- 1
 				close(channel)
+				return
 			}
 			fmt.Printf("Workflow status: %s\n", approved)
 			switch approved {
@@ -61,16 +79,18 @@ func newCommentLoopChannel(ctx context.Context, apprv *approvalEnvironment, clie
 					fmt.Printf("error commenting on issue: %v\n", err)
 					channel <- 1
 					close(channel)
+					return
 				}
-				_, _, err = client.Issues.Edit(ctx, apprv.targetRepoOwner, apprv.targetRepoName, apprv.approvalIssueNumber, &github.IssueRequest{State: &newState})
-				if err != nil {
+				if err = patchIssueState(ctx, client, apprv.targetRepoOwner, apprv.targetRepoName, apprv.approvalIssueNumber, newState); err != nil {
 					fmt.Printf("error closing issue: %v\n", err)
 					channel <- 1
 					close(channel)
+					return
 				}
 				channel <- 0
 				fmt.Println("Workflow manual approval completed")
 				close(channel)
+				return
 			case approvalStatusDenied:
 				newState := "closed"
 				closeComment := "Request denied. Closing issue "
@@ -88,15 +108,17 @@ func newCommentLoopChannel(ctx context.Context, apprv *approvalEnvironment, clie
 					fmt.Printf("error commenting on issue: %v\n", err)
 					channel <- 1
 					close(channel)
+					return
 				}
-				_, _, err = client.Issues.Edit(ctx, apprv.targetRepoOwner, apprv.targetRepoName, apprv.approvalIssueNumber, &github.IssueRequest{State: &newState})
-				if err != nil {
+				if err = patchIssueState(ctx, client, apprv.targetRepoOwner, apprv.targetRepoName, apprv.approvalIssueNumber, newState); err != nil {
 					fmt.Printf("error closing issue: %v\n", err)
 					channel <- 1
 					close(channel)
+					return
 				}
 				channel <- 1
 				close(channel)
+				return
 			}
 
 			time.Sleep(pollingInterval)
@@ -115,13 +137,30 @@ func newGithubClient(ctx context.Context) (*github.Client, error) {
 	serverUrl, serverUrlPresent := os.LookupEnv("GITHUB_SERVER_URL")
 	apiUrl, apiUrlPresent := os.LookupEnv("GITHUB_API_URL")
 
-	if serverUrlPresent {
-		if !apiUrlPresent {
-			apiUrl = serverUrl
-		}
-		return github.NewEnterpriseClient(apiUrl, serverUrl, tc)
+	if !serverUrlPresent && !apiUrlPresent {
+		return github.NewClient(tc), nil
 	}
-	return github.NewClient(tc), nil
+
+	if !apiUrlPresent {
+		// Only GITHUB_SERVER_URL is set; assume GitHub Enterprise with the
+		// default /api/v3 path and let NewEnterpriseClient append it.
+		return github.NewEnterpriseClient(serverUrl, serverUrl, tc)
+	}
+
+	// GITHUB_API_URL is set. github.NewEnterpriseClient appends "/api/v3/" to
+	// any URL whose path doesn't already end with it. This breaks Forgejo/Gitea
+	// instances whose API lives at "/api/v1/". Instead, set BaseURL directly so
+	// the URL is used as-is, which works for GitHub.com, GHES, and Forgejo alike.
+	if !strings.HasSuffix(apiUrl, "/") {
+		apiUrl += "/"
+	}
+	baseURL, err := url.Parse(apiUrl)
+	if err != nil {
+		return nil, fmt.Errorf("invalid GITHUB_API_URL %q: %w", apiUrl, err)
+	}
+	client := github.NewClient(tc)
+	client.BaseURL = baseURL
+	return client, nil
 }
 
 func validateInput() error {
@@ -243,7 +282,7 @@ func main() {
 
 	err = apprv.createApprovalIssue(ctx)
 	if err != nil {
-		fmt.Printf("error creating issue: %v", err)
+		fmt.Printf("error creating issue: %v\n", err)
 		os.Exit(1)
 	}
 
@@ -253,7 +292,7 @@ func main() {
 	}
 	_, err = apprv.SetActionOutputs(outputs)
 	if err != nil {
-		fmt.Printf("error saving output: %v", err)
+		fmt.Printf("error saving output: %v\n", err)
 		os.Exit(1)
 	}
 

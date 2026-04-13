@@ -51,11 +51,11 @@ func newApprovalEnvironment(client *github.Client, repoFullName, repoOwner strin
 }
 
 func (a approvalEnvironment) runURL() string {
-	baseUrl := a.client.BaseURL.String()
-	if strings.Contains(baseUrl, "github.com") {
-		baseUrl = "https://github.com/"
+	serverUrl := os.Getenv("GITHUB_SERVER_URL")
+	if serverUrl == "" {
+		serverUrl = "https://github.com"
 	}
-	return fmt.Sprintf("%s%s/actions/runs/%d", baseUrl, a.repoFullName, a.runID)
+	return fmt.Sprintf("%s/%s/actions/runs/%d", strings.TrimRight(serverUrl, "/"), a.repoFullName, a.runID)
 }
 
 func (a *approvalEnvironment) createApprovalIssue(ctx context.Context) error {
@@ -96,25 +96,44 @@ func (a *approvalEnvironment) createApprovalIssue(ctx context.Context) error {
 		a.issueApprovers,
 		issueBody,
 	)
-	a.approvalIssue, _, err = a.client.Issues.Create(ctx, a.targetRepoOwner, a.targetRepoName, &github.IssueRequest{
-		Title:     &issueTitle,
-		Body:      &issueBody,
-		Assignees: &a.issueApprovers,
-	})
+	// Use NewRequest+Do with a minimal response struct rather than client.Issues.Create.
+	// Forgejo's issue response includes "repository.owner" as a plain string, but
+	// go-github's Repository.Owner is a *User struct, causing an unmarshal error.
+	// Our minimal struct omits Repository entirely, so the field is ignored.
+	type createIssueResponse struct {
+		Number  int    `json:"number"`
+		HTMLURL string `json:"html_url"`
+	}
+	req, err := a.client.NewRequest("POST",
+		fmt.Sprintf("repos/%s/%s/issues", a.targetRepoOwner, a.targetRepoName),
+		&github.IssueRequest{
+			Title:     &issueTitle,
+			Body:      &issueBody,
+			Assignees: &a.issueApprovers,
+		},
+	)
 	if err != nil {
 		return err
 	}
-	a.approvalIssueNumber = a.approvalIssue.GetNumber()
+	var created createIssueResponse
+	if _, err = a.client.Do(ctx, req, &created); err != nil {
+		return err
+	}
+	a.approvalIssueNumber = created.Number
+	a.approvalIssue = &github.Issue{
+		Number:  &created.Number,
+		HTMLURL: &created.HTMLURL,
+	}
 
-  bodyChunks := splitLongString(a.issueBody)
-  for _, chunk := range bodyChunks {
-      _, _, err = a.client.Issues.CreateComment(ctx, a.targetRepoOwner, a.targetRepoName, *a.approvalIssue.Number, &github.IssueComment{
-          Body: &chunk,
-      })
-      if err != nil {
-          return fmt.Errorf("failed to add comment chunk to issue: %w", err)
-      }
-  }
+	bodyChunks := splitLongString(a.issueBody)
+	for _, chunk := range bodyChunks {
+		_, _, err = a.client.Issues.CreateComment(ctx, a.targetRepoOwner, a.targetRepoName, created.Number, &github.IssueComment{
+			Body: &chunk,
+		})
+		if err != nil {
+			return fmt.Errorf("failed to add comment chunk to issue: %w", err)
+		}
+	}
 
 	fmt.Printf("Issue created: %s\n", a.approvalIssue.GetHTMLURL())
 	return nil
