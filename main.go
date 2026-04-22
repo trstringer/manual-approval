@@ -51,6 +51,7 @@ func handleInterrupt(ctx context.Context, client *github.Client, apprv *approval
 func newCommentLoopChannel(ctx context.Context, apprv *approvalEnvironment, client *github.Client, pollingInterval time.Duration) chan int {
 	channel := make(chan int)
 	go func() {
+		loop_ctr := 0 
 		for {
 			comments, _, err := client.Issues.ListComments(ctx, apprv.targetRepoOwner, apprv.targetRepoName, apprv.approvalIssueNumber, &github.IssueListCommentsOptions{})
 			if err != nil {
@@ -118,9 +119,16 @@ func newCommentLoopChannel(ctx context.Context, apprv *approvalEnvironment, clie
 				}
 				channel <- 1
 				close(channel)
-        return
+				return
 			case approvalStatusPending:
 				if apprv.closeIssueMeansDenial {
+					// Loop counter to make an API call only once per 10 interation, intention: avoid github rate limiting and reduce api cost and stress.
+					if loop_ctr < 10 {
+						loop_ctr += 1
+						continue
+					}
+					loop_ctr = 0 
+
 					issue, _, err := client.Issues.Get(
 
 						ctx,
