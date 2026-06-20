@@ -26,6 +26,7 @@ const (
 	envVarTargetRepoOwner                    string = "INPUT_TARGET-REPOSITORY-OWNER"
 	envVarTargetRepo                         string = "INPUT_TARGET-REPOSITORY"
 	envVarPollingIntervalSeconds             string = "INPUT_POLLING-INTERVAL-SECONDS"
+	envVarCloseIssueMeansDenial              string = "INPUT_CLOSE-ISSUE-MEANS-DENIAL"
 )
 
 var (
