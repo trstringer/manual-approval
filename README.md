@@ -1,7 +1,7 @@
 
 # Manual Workflow Approval
 
-[![ci](https://github.com/trstringer/manual-approval/actions/workflows/ci.yaml/badge.svg)](https://github.com/trstringer/manual-approval/actions/workflows/ci.yaml)
+[![ci](https://github.com/trstringer/manual-approval/actions/workflows/ci.yaml/badge.svg)](https://github.com/trstringer/manual-approval/actions/workflows/ci.yaml) [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/trstringer/manual-approval/badge)](https://scorecard.dev/viewer/?uri=github.com/trstringer/manual-approval)
 
 Pause a GitHub Actions workflow and require manual approval from one or more approvers before continuing.
 
