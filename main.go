@@ -337,7 +337,16 @@ func main() {
 		}
 	}
 
-	apprv, err := newApprovalEnvironment(client, repoFullName, repoOwner, runID, approvers, minimumApprovals, issueTitle, issueBody, targetRepoOwner, targetRepoName, failOnDenial, closeIssueMeansDenial)
+	parts := strings.Split(os.Getenv(envVarIssueLabels), ",")
+	issueLabels := make([]string, 0, len(parts))
+	for _, label := range parts {
+		if trimmed := strings.TrimSpace(label); trimmed != "" {
+			issueLabels = append(issueLabels, trimmed)
+		}
+	}
+	fmt.Printf("Parsed %d labels", len(issueLabels))
+
+	apprv, err := newApprovalEnvironment(client, repoFullName, repoOwner, runID, approvers, minimumApprovals, issueTitle, issueBody, targetRepoOwner, targetRepoName, failOnDenial, closeIssueMeansDenial, issueLabels)
 	if err != nil {
 		fmt.Printf("error creating approval environment: %v\n", err)
 		os.Exit(1)
