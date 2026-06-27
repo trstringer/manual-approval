@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"os"
 	"os/signal"
 	"strconv"
@@ -12,6 +13,22 @@ import (
 	"github.com/google/go-github/v43/github"
 	"golang.org/x/oauth2"
 )
+
+// patchIssueState closes or otherwise updates an issue's state without decoding
+// the response body into a github.Issue. go-github's Issues.Edit decodes the
+// response into github.Issue, which fails against Forgejo because its issue
+// response embeds "repository.owner" as a plain string rather than a User object.
+func patchIssueState(ctx context.Context, client *github.Client, owner, repo string, number int, state string) error {
+	req, err := client.NewRequest("PATCH",
+		fmt.Sprintf("repos/%s/%s/issues/%d", owner, repo, number),
+		&github.IssueRequest{State: &state},
+	)
+	if err != nil {
+		return err
+	}
+	_, err = client.Do(ctx, req, nil)
+	return err
+}
 
 func handleInterrupt(ctx context.Context, client *github.Client, apprv *approvalEnvironment) {
 	newState := "closed"
@@ -25,8 +42,7 @@ func handleInterrupt(ctx context.Context, client *github.Client, apprv *approval
 		fmt.Printf("error commenting on issue: %v\n", err)
 		return
 	}
-	_, _, err = client.Issues.Edit(ctx, apprv.targetRepoOwner, apprv.targetRepoName, apprv.approvalIssueNumber, &github.IssueRequest{State: &newState})
-	if err != nil {
+	if err = patchIssueState(ctx, client, apprv.targetRepoOwner, apprv.targetRepoName, apprv.approvalIssueNumber, newState); err != nil {
 		fmt.Printf("error closing issue: %v\n", err)
 		return
 	}
@@ -41,12 +57,14 @@ type commentLoopResult struct {
 func newCommentLoopChannel(ctx context.Context, apprv *approvalEnvironment, client *github.Client, pollingInterval time.Duration) chan commentLoopResult {
 	channel := make(chan commentLoopResult)
 	go func() {
+		loop_ctr := 0 
 		for {
 			comments, _, err := client.Issues.ListComments(ctx, apprv.targetRepoOwner, apprv.targetRepoName, apprv.approvalIssueNumber, &github.IssueListCommentsOptions{})
 			if err != nil {
 				fmt.Printf("error getting comments: %v\n", err)
 				channel <- commentLoopResult{exitCode: 1}
 				close(channel)
+				return
 			}
 
 			approved, responder, err := approvalFromComments(comments, apprv.issueApprovers, apprv.minimumApprovals)
@@ -54,6 +72,7 @@ func newCommentLoopChannel(ctx context.Context, apprv *approvalEnvironment, clie
 				fmt.Printf("error getting approval from comments: %v\n", err)
 				channel <- commentLoopResult{exitCode: 1}
 				close(channel)
+				return
 			}
 			fmt.Printf("Workflow status: %s\n", approved)
 			switch approved {
@@ -67,16 +86,18 @@ func newCommentLoopChannel(ctx context.Context, apprv *approvalEnvironment, clie
 					fmt.Printf("error commenting on issue: %v\n", err)
 					channel <- commentLoopResult{exitCode: 1}
 					close(channel)
+					return
 				}
-				_, _, err = client.Issues.Edit(ctx, apprv.targetRepoOwner, apprv.targetRepoName, apprv.approvalIssueNumber, &github.IssueRequest{State: &newState})
-				if err != nil {
+				if err = patchIssueState(ctx, client, apprv.targetRepoOwner, apprv.targetRepoName, apprv.approvalIssueNumber, newState); err != nil {
 					fmt.Printf("error closing issue: %v\n", err)
 					channel <- commentLoopResult{exitCode: 1}
 					close(channel)
+					return
 				}
 				channel <- commentLoopResult{exitCode: 0, responder: responder, status: approvalStatusApproved}
 				fmt.Println("Workflow manual approval completed")
 				close(channel)
+				return
 			case approvalStatusDenied:
 				newState := "closed"
 				closeComment := "Request denied. Closing issue "
@@ -94,15 +115,69 @@ func newCommentLoopChannel(ctx context.Context, apprv *approvalEnvironment, clie
 					fmt.Printf("error commenting on issue: %v\n", err)
 					channel <- commentLoopResult{exitCode: 1}
 					close(channel)
+					return
 				}
-				_, _, err = client.Issues.Edit(ctx, apprv.targetRepoOwner, apprv.targetRepoName, apprv.approvalIssueNumber, &github.IssueRequest{State: &newState})
-				if err != nil {
+				if err = patchIssueState(ctx, client, apprv.targetRepoOwner, apprv.targetRepoName, apprv.approvalIssueNumber, newState); err != nil {
 					fmt.Printf("error closing issue: %v\n", err)
 					channel <- commentLoopResult{exitCode: 1}
 					close(channel)
+					return
 				}
 				channel <- commentLoopResult{exitCode: 1, responder: responder, status: approvalStatusDenied}
 				close(channel)
+				return
+			case approvalStatusPending:
+				if apprv.closeIssueMeansDenial {
+					// Loop counter to make an API call only once per 10 interation, intention: avoid github rate limiting and reduce api cost and stress.
+					if loop_ctr < 10 {
+						loop_ctr += 1
+						continue
+					}
+					loop_ctr = 0 
+
+					issue, _, err := client.Issues.Get(
+
+						ctx,
+						apprv.targetRepoOwner,
+						apprv.targetRepoName,
+						apprv.approvalIssueNumber,
+					)
+					if err != nil {
+						fmt.Printf("error fetching issue state: %v\n", err)
+						channel <- 1
+						close(channel)
+
+						return
+					}
+
+					if issue.GetState() == "closed" {
+
+						// Issue was closed externally without any approval/denial comment.
+						// Treat as denial per user configuration.
+						denyComment := "Issue was closed without approval. Treating closure as denial"
+
+						if !apprv.failOnDenial {
+							denyComment += " but continuing workflow."
+						} else {
+							denyComment += " and failing workflow."
+						}
+						fmt.Println(denyComment)
+						// Issue is already closed — add comment only, skip re-closing
+						_, _, err := client.Issues.CreateComment(
+							ctx,
+							apprv.targetRepoOwner,
+							apprv.targetRepoName,
+							apprv.approvalIssueNumber,
+							&github.IssueComment{Body: &denyComment},
+						)
+						if err != nil {
+							fmt.Printf("error commenting on closed issue: %v\n", err)
+						}
+						channel <- 1
+						close(channel)
+						return
+					}
+				}
 			}
 
 			time.Sleep(pollingInterval)
@@ -121,13 +196,30 @@ func newGithubClient(ctx context.Context) (*github.Client, error) {
 	serverUrl, serverUrlPresent := os.LookupEnv("GITHUB_SERVER_URL")
 	apiUrl, apiUrlPresent := os.LookupEnv("GITHUB_API_URL")
 
-	if serverUrlPresent {
-		if !apiUrlPresent {
-			apiUrl = serverUrl
-		}
-		return github.NewEnterpriseClient(apiUrl, serverUrl, tc)
+	if !serverUrlPresent && !apiUrlPresent {
+		return github.NewClient(tc), nil
 	}
-	return github.NewClient(tc), nil
+
+	if !apiUrlPresent {
+		// Only GITHUB_SERVER_URL is set; assume GitHub Enterprise with the
+		// default /api/v3 path and let NewEnterpriseClient append it.
+		return github.NewEnterpriseClient(serverUrl, serverUrl, tc)
+	}
+
+	// GITHUB_API_URL is set. github.NewEnterpriseClient appends "/api/v3/" to
+	// any URL whose path doesn't already end with it. This breaks Forgejo/Gitea
+	// instances whose API lives at "/api/v1/". Instead, set BaseURL directly so
+	// the URL is used as-is, which works for GitHub.com, GHES, and Forgejo alike.
+	if !strings.HasSuffix(apiUrl, "/") {
+		apiUrl += "/"
+	}
+	baseURL, err := url.Parse(apiUrl)
+	if err != nil {
+		return nil, fmt.Errorf("invalid GITHUB_API_URL %q: %w", apiUrl, err)
+	}
+	client := github.NewClient(tc)
+	client.BaseURL = baseURL
+	return client, nil
 }
 
 func validateInput() error {
@@ -204,6 +296,16 @@ func main() {
 		}
 	}
 
+	closeIssueMeansDenial := false
+	closeIssueMeansDenialRaw := os.Getenv(envVarCloseIssueMeansDenial)
+	if closeIssueMeansDenialRaw != "" {
+		closeIssueMeansDenial, err = strconv.ParseBool(closeIssueMeansDenialRaw)
+		if err != nil {
+			fmt.Printf("error parsing close-issue-means-denial: %v\n", err)
+			os.Exit(1)
+		}
+	}
+
 	pollingInterval := defaultPollingInterval
 	pollingIntervalSecondsRaw := os.Getenv(envVarPollingIntervalSeconds)
 	if pollingIntervalSecondsRaw != "" {
@@ -241,7 +343,16 @@ func main() {
 		}
 	}
 
-	apprv, err := newApprovalEnvironment(client, repoFullName, repoOwner, runID, approvers, minimumApprovals, issueTitle, issueBody, targetRepoOwner, targetRepoName, failOnDenial)
+	parts := strings.Split(os.Getenv(envVarIssueLabels), ",")
+	issueLabels := make([]string, 0, len(parts))
+	for _, label := range parts {
+		if trimmed := strings.TrimSpace(label); trimmed != "" {
+			issueLabels = append(issueLabels, trimmed)
+		}
+	}
+	fmt.Printf("Parsed %d labels", len(issueLabels))
+
+	apprv, err := newApprovalEnvironment(client, repoFullName, repoOwner, runID, approvers, minimumApprovals, issueTitle, issueBody, targetRepoOwner, targetRepoName, failOnDenial, closeIssueMeansDenial, issueLabels)
 	if err != nil {
 		fmt.Printf("error creating approval environment: %v\n", err)
 		os.Exit(1)
@@ -249,17 +360,17 @@ func main() {
 
 	err = apprv.createApprovalIssue(ctx)
 	if err != nil {
-		fmt.Printf("error creating issue: %v", err)
+		fmt.Printf("error creating issue: %v\n", err)
 		os.Exit(1)
 	}
 
-	outputs := map[string]string {
+	outputs := map[string]string{
 		"issue-number": fmt.Sprintf("%d", apprv.approvalIssueNumber),
-		"issue-url": apprv.approvalIssue.GetHTMLURL(),
+		"issue-url":    apprv.approvalIssue.GetHTMLURL(),
 	}
 	_, err = apprv.SetActionOutputs(outputs)
 	if err != nil {
-		fmt.Printf("error saving output: %v", err)
+		fmt.Printf("error saving output: %v\n", err)
 		os.Exit(1)
 	}
 
@@ -272,18 +383,16 @@ func main() {
 	case result := <-commentLoopChannel:
 		approvalStatus := ""
 
-		if result.status == approvalStatusApproved {
-			approvalStatus = "approved"
-		} else if result.status == approvalStatusDenied {
+		if !failOnDenial && exitCode == 1 {
 			approvalStatus = "denied"
-		} else if (!failOnDenial && result.exitCode == 1) {
-			approvalStatus = "denied"
-		} else if (result.exitCode == 1) {
+			exitCode = 0
+		} else if exitCode == 1 {
 			approvalStatus = "denied"
 		} else {
 			approvalStatus = "approved"
 		}
-		outputs := map[string]string {
+
+		outputs := map[string]string{
 			"approval-status": approvalStatus,
 			"issue-responder": result.responder,
 		}

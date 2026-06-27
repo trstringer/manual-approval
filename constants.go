@@ -18,6 +18,7 @@ const (
 	envVarMinimumApprovals                   string = "INPUT_MINIMUM-APPROVALS"
 	envVarIssueTitle                         string = "INPUT_ISSUE-TITLE"
 	envVarIssueBody                          string = "INPUT_ISSUE-BODY"
+	envVarIssueLabels                        string = "INPUT_ISSUE-LABELS"
 	envVarIssueBodyFilePath                  string = "INPUT_ISSUE-BODY-FILE-PATH"
 	envVarExcludeWorkflowInitiatorAsApprover string = "INPUT_EXCLUDE-WORKFLOW-INITIATOR-AS-APPROVER"
 	envVarAdditionalApprovedWords            string = "INPUT_ADDITIONAL-APPROVED-WORDS"
@@ -26,6 +27,7 @@ const (
 	envVarTargetRepoOwner                    string = "INPUT_TARGET-REPOSITORY-OWNER"
 	envVarTargetRepo                         string = "INPUT_TARGET-REPOSITORY"
 	envVarPollingIntervalSeconds             string = "INPUT_POLLING-INTERVAL-SECONDS"
+	envVarCloseIssueMeansDenial              string = "INPUT_CLOSE-ISSUE-MEANS-DENIAL"
 )
 
 var (

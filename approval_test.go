@@ -497,9 +497,9 @@ func TestSaveOutput(t *testing.T) {
 				minimumApprovals:    0,
 			}
 
-            if err := os.Remove(testCase.env_github_output); err != nil && !os.IsNotExist(err) {
-                t.Fatalf("failed to remove file: %v", err)
-            }
+			if err := os.Remove(testCase.env_github_output); err != nil && !os.IsNotExist(err) {
+				t.Fatalf("failed to remove file: %v", err)
+			}
 
 			actual, err := a.SetActionOutputs(nil)
 
