@@ -1,6 +1,6 @@
 # not pinning the exact image digest to support multiple architecture builds without multiple Dockerfiles
 
-FROM golang:1.25 AS builder
+FROM golang:1.26 AS builder
 COPY . /var/app
 WORKDIR /var/app
 RUN go mod tidy
