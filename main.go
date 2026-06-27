@@ -344,6 +344,7 @@ func main() {
 			issueLabels = append(issueLabels, trimmed)
 		}
 	}
+	fmt.Printf("Parsed %d labels", len(issueLabels))
 
 	apprv, err := newApprovalEnvironment(client, repoFullName, repoOwner, runID, approvers, minimumApprovals, issueTitle, issueBody, targetRepoOwner, targetRepoName, failOnDenial, closeIssueMeansDenial, issueLabels)
 	if err != nil {
