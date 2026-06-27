@@ -62,6 +62,7 @@ steps:
 * `issue-title` is a string that will be used as the title of the approval-issue.
 * `issue-body` is a string that will be added as comments on the approval-issue.
 * `issue-body-file-path` is a string that is the file path, this file's content will be added as comments on the approval-issue. If both issue-body and issue-body-file-path are given, then the file contents are considered for issue comments. 
+- `issue-labels` is a comma seperated list of labels in string format, these labels will be used as is in the approval issue (after stripping leading and lagging whitespaces and tabs and new lines).
 * `exclude-workflow-initiator-as-approver` is a boolean that indicates if the workflow initiator (determined by the `GITHUB_ACTOR` environment variable) should be filtered from the final list of approvers. This is optional and defaults to `false`. Set this to `true` to prevent users in the `approvers` list from being able to self-approve workflows.
 * `fail-on-denial` is a boolean that indicates if the workflow should fail if any approver denies the approval. This is optional and defaults to `true`. Set this to `false` to allow the workflow to continue if any approver denies the approval.
 * `additional-approved-words` is a comma separated list of strings to expand the dictionary of words that indicate approval. This is optional and defaults to an empty string.
