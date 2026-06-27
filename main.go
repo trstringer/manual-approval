@@ -342,7 +342,11 @@ func main() {
 	for _, label := range parts {
 		if trimmed := strings.TrimSpace(label); trimmed != "" {
 			issueLabels = append(issueLabels, trimmed)
+			fmt.Println("Parsed label: %s", trimmed)
 		}
+	}
+	if len(issueLabels) == 0 {
+		fmt.Println("No labels found! continuing without issue labels.")
 	}
 
 	apprv, err := newApprovalEnvironment(client, repoFullName, repoOwner, runID, approvers, minimumApprovals, issueTitle, issueBody, targetRepoOwner, targetRepoName, failOnDenial, closeIssueMeansDenial, issueLabels)

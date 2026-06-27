@@ -66,4 +66,4 @@ outputs:
     description: The status of the approval ("approved" or "denied")
 runs:
   using: docker
-  image: docker://ghcr.io/trstringer/manual-approval:1.12.0
+  image: docker://ghcr.io/snskarora/manual-approval:vx
