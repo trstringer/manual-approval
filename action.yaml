@@ -57,6 +57,12 @@ inputs:
       comment will be treated as a denial. Disabled by default.
     required: false
     default: "false"
+  allow-comment-reasons:
+    description: >
+      If true, treat an approval or denial keyword on the first line as the
+      decision and allow explanatory text on later lines.
+    required: false
+    default: "false"
 outputs:
   issue-number:
     description: The number of the issue created

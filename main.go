@@ -61,7 +61,7 @@ func newCommentLoopChannel(ctx context.Context, apprv *approvalEnvironment, clie
 				return
 			}
 
-			approved, err := approvalFromComments(comments, apprv.issueApprovers, apprv.minimumApprovals)
+			approved, err := approvalFromComments(comments, apprv.issueApprovers, apprv.minimumApprovals, apprv.allowCommentReasons)
 			if err != nil {
 				fmt.Printf("error getting approval from comments: %v\n", err)
 				channel <- 1
@@ -300,6 +300,16 @@ func main() {
 		}
 	}
 
+	allowCommentReasons := false
+	allowCommentReasonsRaw := os.Getenv(envVarAllowCommentReasons)
+	if allowCommentReasonsRaw != "" {
+		allowCommentReasons, err = strconv.ParseBool(allowCommentReasonsRaw)
+		if err != nil {
+			fmt.Printf("error parsing allow-comment-reasons: %v\n", err)
+			os.Exit(1)
+		}
+	}
+
 	pollingInterval := defaultPollingInterval
 	pollingIntervalSecondsRaw := os.Getenv(envVarPollingIntervalSeconds)
 	if pollingIntervalSecondsRaw != "" {
@@ -346,7 +356,7 @@ func main() {
 	}
 	fmt.Printf("Parsed %d labels", len(issueLabels))
 
-	apprv, err := newApprovalEnvironment(client, repoFullName, repoOwner, runID, approvers, minimumApprovals, issueTitle, issueBody, targetRepoOwner, targetRepoName, failOnDenial, closeIssueMeansDenial, issueLabels)
+	apprv, err := newApprovalEnvironment(client, repoFullName, repoOwner, runID, approvers, minimumApprovals, issueTitle, issueBody, targetRepoOwner, targetRepoName, failOnDenial, closeIssueMeansDenial, allowCommentReasons, issueLabels)
 	if err != nil {
 		fmt.Printf("error creating approval environment: %v\n", err)
 		os.Exit(1)
