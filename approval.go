@@ -27,9 +27,10 @@ type approvalEnvironment struct {
 	targetRepoName        string
 	failOnDenial          bool
 	closeIssueMeansDenial bool
+	allowCommentReasons   bool
 }
 
-func newApprovalEnvironment(client *github.Client, repoFullName, repoOwner string, runID int, approvers []string, minimumApprovals int, issueTitle, issueBody string, targetRepoOwner string, targetRepoName string, failOnDenial bool, closeIssueMeansDenial bool, issueLabels []string) (*approvalEnvironment, error) {
+func newApprovalEnvironment(client *github.Client, repoFullName, repoOwner string, runID int, approvers []string, minimumApprovals int, issueTitle, issueBody string, targetRepoOwner string, targetRepoName string, failOnDenial bool, closeIssueMeansDenial bool, allowCommentReasons bool, issueLabels []string) (*approvalEnvironment, error) {
 	repoOwnerAndName := strings.Split(repoFullName, "/")
 	if len(repoOwnerAndName) != 2 {
 		return nil, fmt.Errorf("repo owner and name in unexpected format: %s", repoFullName)
@@ -50,6 +51,7 @@ func newApprovalEnvironment(client *github.Client, repoFullName, repoOwner strin
 		targetRepoName:        targetRepoName,
 		failOnDenial:          failOnDenial,
 		closeIssueMeansDenial: closeIssueMeansDenial,
+		allowCommentReasons:   allowCommentReasons,
 		issueLabels:           issueLabels,
 	}, nil
 }
@@ -184,7 +186,7 @@ func (a *approvalEnvironment) SetActionOutputs(outputs map[string]string) (bool,
 	return true, nil
 }
 
-func approvalFromComments(comments []*github.IssueComment, approvers []string, minimumApprovals int) (approvalStatus, error) {
+func approvalFromComments(comments []*github.IssueComment, approvers []string, minimumApprovals int, allowCommentReasons bool) (approvalStatus, error) {
 	remainingApprovers := make([]string, len(approvers))
 	copy(remainingApprovers, approvers)
 
@@ -199,7 +201,7 @@ func approvalFromComments(comments []*github.IssueComment, approvers []string, m
 			continue
 		}
 
-		commentBody := comment.GetBody()
+		commentBody := decisionText(comment.GetBody(), allowCommentReasons)
 		isApprovalComment, err := isApproved(commentBody)
 		if err != nil {
 			return approvalStatusPending, err
@@ -223,6 +225,20 @@ func approvalFromComments(comments []*github.IssueComment, approvers []string, m
 	}
 
 	return approvalStatusPending, nil
+}
+
+// decisionText keeps the existing exact-comment behavior unless the optional
+// comment-reason mode is enabled. In that mode only the first line determines
+// the decision, so later lines can explain it without introducing ambiguous
+// approval or denial keywords.
+func decisionText(commentBody string, allowCommentReasons bool) string {
+	if !allowCommentReasons {
+		return commentBody
+	}
+
+	normalized := strings.ReplaceAll(commentBody, "\r\n", "\n")
+	firstLine, _, _ := strings.Cut(normalized, "\n")
+	return firstLine
 }
 
 func approversIndex(approvers []string, name string) int {
