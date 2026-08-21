@@ -125,7 +125,7 @@ func newCommentLoopChannel(ctx context.Context, apprv *approvalEnvironment, clie
 					// Loop counter to make an API call only once per 10 interation, intention: avoid github rate limiting and reduce api cost and stress.
 					if loop_ctr < 10 {
 						loop_ctr += 1
-						continue
+						break
 					}
 					loop_ctr = 0 
 
