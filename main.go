@@ -123,6 +123,9 @@ func newCommentLoopChannel(ctx context.Context, apprv *approvalEnvironment, clie
 			case approvalStatusPending:
 				if apprv.closeIssueMeansDenial {
 					// Loop counter to make an API call only once per 10 interation, intention: avoid github rate limiting and reduce api cost and stress.
+					// Throttle the issue-state check: Issues.Get runs once every 11 iterations to avoid GitHub rate limiting.
+					//
+					// This break exits the enclosing switch, NOT the for loop, so control falls through to the time.Sleep below and polling continues at the normal interval. Do not change it back to continue: continue is not captured by a switch, so it would jump straight to the next for iteration, skip the sleep, and issue 12 API calls per polling interval (see #235).
 					if loop_ctr < 10 {
 						loop_ctr += 1
 						break
