@@ -25,6 +25,7 @@ func TestApprovalFromComments(t *testing.T) {
 		approvers        []string
 		minimumApprovals int
 		expectedStatus   approvalStatus
+		allowReasons     bool
 	}{
 		{
 			name: "single_approver_single_comment_approved",
@@ -58,6 +59,53 @@ func TestApprovalFromComments(t *testing.T) {
 			},
 			approvers:      []string{login1},
 			expectedStatus: approvalStatusPending,
+		},
+		{
+			name: "single_approver_approval_with_reason_enabled",
+			comments: []*github.IssueComment{
+				{
+					User: &github.User{Login: &login1},
+					Body: github.String("Approved.\nA later denied keyword is explanatory text only."),
+				},
+			},
+			approvers:      []string{login1},
+			expectedStatus: approvalStatusApproved,
+			allowReasons:   true,
+		},
+		{
+			name: "single_approver_denial_with_reason_enabled",
+			comments: []*github.IssueComment{
+				{
+					User: &github.User{Login: &login1},
+					Body: github.String("Denied!\r\nA later approved keyword is explanatory text only."),
+				},
+			},
+			approvers:      []string{login1},
+			expectedStatus: approvalStatusDenied,
+			allowReasons:   true,
+		},
+		{
+			name: "single_approver_reason_stays_pending_by_default",
+			comments: []*github.IssueComment{
+				{
+					User: &github.User{Login: &login1},
+					Body: github.String("Approved.\nThe deployment checks passed."),
+				},
+			},
+			approvers:      []string{login1},
+			expectedStatus: approvalStatusPending,
+		},
+		{
+			name: "decision_keyword_after_first_line_stays_pending",
+			comments: []*github.IssueComment{
+				{
+					User: &github.User{Login: &login1},
+					Body: github.String("Context first.\nApproved."),
+				},
+			},
+			approvers:      []string{login1},
+			expectedStatus: approvalStatusPending,
+			allowReasons:   true,
 		},
 		{
 			name: "single_approver_multi_comment_approved",
@@ -178,7 +226,7 @@ func TestApprovalFromComments(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			actual, err := approvalFromComments(testCase.comments, testCase.approvers, testCase.minimumApprovals)
+			actual, err := approvalFromComments(testCase.comments, testCase.approvers, testCase.minimumApprovals, testCase.allowReasons)
 			if err != nil {
 				t.Fatalf("error getting approval from comments: %v", err)
 			}
