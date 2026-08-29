@@ -64,6 +64,8 @@ outputs:
     description: The URL of the issue created
   approval-status:
     description: The status of the approval ("approved" or "denied")
+  issue-responder:
+    description: The GitHub username that approved or denied the request
 runs:
   using: docker
   image: docker://ghcr.io/trstringer/manual-approval:1.13.0
