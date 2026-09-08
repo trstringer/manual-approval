@@ -1,10 +1,10 @@
 module github.com/trstringer/manual-approval
 
-go 1.25.0
+go 1.26.0
 
 require (
 	github.com/google/go-github/v43 v43.0.0
-	golang.org/x/oauth2 v0.33.0
+	golang.org/x/oauth2 v0.37.0
 )
 
 require (
