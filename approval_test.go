@@ -1,13 +1,154 @@
 package main
 
 import (
+	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
 	"os"
 	"strings"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/google/go-github/v43/github"
 )
+
+func TestApprovalFromCommentsAllowCommentReasons(t *testing.T) {
+	comment := func(user, body string) *github.IssueComment {
+		return &github.IssueComment{User: &github.User{Login: github.String(user)}, Body: github.String(body)}
+	}
+	testCases := []struct {
+		name     string
+		comments []*github.IssueComment
+		minimum  int
+		enabled  approvalStatus
+		disabled approvalStatus
+	}{
+		{"approval_with_reason", []*github.IssueComment{comment("login1", "Approved.\nDenied is explanatory text only.")}, 1, approvalStatusApproved, approvalStatusPending},
+		{"denial_with_crlf_reason", []*github.IssueComment{comment("login1", "Denied!\r\nApproved is explanatory text only.")}, 1, approvalStatusDenied, approvalStatusPending},
+		{"exact_approval", []*github.IssueComment{comment("LOGIN1", "APPROVED!\n")}, 1, approvalStatusApproved, approvalStatusApproved},
+		{"exact_denial", []*github.IssueComment{comment("login1", "Denied.\n")}, 1, approvalStatusDenied, approvalStatusDenied},
+		{"decision_on_later_line", []*github.IssueComment{comment("login1", "Context first.\nApproved.")}, 1, approvalStatusPending, approvalStatusPending},
+		{"empty_first_line", []*github.IssueComment{comment("login1", "\nApproved.")}, 1, approvalStatusPending, approvalStatusPending},
+		{"same_line_explanation", []*github.IssueComment{comment("login1", "Approved. Checks passed.")}, 1, approvalStatusPending, approvalStatusPending},
+		{"unauthorized_approval", []*github.IssueComment{comment("outsider", "Approved.\nChecks passed.")}, 1, approvalStatusPending, approvalStatusPending},
+		{"unauthorized_denial", []*github.IssueComment{comment("outsider", "Denied.\nChecks failed.")}, 1, approvalStatusPending, approvalStatusPending},
+		{"distinct_approvers", []*github.IssueComment{comment("login1", "Approved.\nFirst review."), comment("login2", "Approved.\nSecond review.")}, 2, approvalStatusApproved, approvalStatusPending},
+		{"duplicate_approver", []*github.IssueComment{comment("login1", "Approved.\nFirst review."), comment("login1", "Approved.\nRepeated review.")}, 2, approvalStatusPending, approvalStatusPending},
+	}
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			for _, allowReasons := range []bool{false, true} {
+				t.Run(fmt.Sprintf("allow_reasons=%t", allowReasons), func(t *testing.T) {
+					expected := testCase.disabled
+					if allowReasons {
+						expected = testCase.enabled
+					}
+					actual, err := approvalFromComments(testCase.comments, []string{"login1", "login2"}, testCase.minimum, allowReasons)
+					if err != nil || actual != expected {
+						t.Fatalf("got status %s, error %v; want %s", actual, err, expected)
+					}
+				})
+			}
+		})
+	}
+}
+
+func TestCommentLoopAllowCommentReasons(t *testing.T) {
+	for _, allowReasons := range []bool{false, true} {
+		for _, decision := range []string{"Approved", "Denied"} {
+			t.Run(fmt.Sprintf("allow_reasons=%t/%s", allowReasons, decision), func(t *testing.T) {
+				var mu sync.Mutex
+				polls, closingComments, closes := 0, 0, 0
+				server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					mu.Lock()
+					defer mu.Unlock()
+					w.Header().Set("Content-Type", "application/json")
+					var response any
+					switch {
+					case r.Method == http.MethodGet && r.URL.Path == "/repos/owner/repo/issues/1/comments":
+						polls++
+						comments := []*github.IssueComment{{
+							User: &github.User{Login: github.String("login1")},
+							Body: github.String(decision + ".\nThe deployment checks explain this decision."),
+						}}
+						if polls > 1 {
+							comments = append(comments, &github.IssueComment{
+								User: &github.User{Login: github.String("login1")}, Body: github.String(decision),
+							})
+						}
+						response = comments
+					case r.Method == http.MethodPost && r.URL.Path == "/repos/owner/repo/issues/1/comments":
+						var comment github.IssueComment
+						wantBody := "The required number of approvals (1) has been met; continuing workflow and closing this issue."
+						if decision == "Denied" {
+							wantBody = "Request denied. Closing issue and failing workflow."
+						}
+						if err := json.NewDecoder(r.Body).Decode(&comment); err != nil || comment.GetBody() != wantBody {
+							t.Errorf("got closing comment %q, error %v; want %q", comment.GetBody(), err, wantBody)
+						}
+						closingComments++
+						response = &github.IssueComment{}
+					case r.Method == http.MethodPatch && r.URL.Path == "/repos/owner/repo/issues/1":
+						var issue github.IssueRequest
+						if err := json.NewDecoder(r.Body).Decode(&issue); err != nil || issue.GetState() != "closed" {
+							t.Errorf("got close request %v, error %v", issue, err)
+						}
+						closes++
+						response = &github.Issue{}
+					default:
+						t.Errorf("unexpected request: %s %s", r.Method, r.URL.Path)
+						http.Error(w, "unexpected request", http.StatusNotFound)
+						return
+					}
+					if err := json.NewEncoder(w).Encode(response); err != nil {
+						t.Errorf("encoding response: %v", err)
+					}
+				}))
+				defer server.Close()
+				client := github.NewClient(server.Client())
+				baseURL, err := url.Parse(server.URL + "/")
+				if err != nil {
+					t.Fatal(err)
+				}
+				client.BaseURL = baseURL
+				apprv := &approvalEnvironment{
+					targetRepoOwner: "owner", targetRepoName: "repo", approvalIssueNumber: 1,
+					issueApprovers: []string{"login1"}, minimumApprovals: 1,
+					failOnDenial: true, allowCommentReasons: allowReasons,
+				}
+				ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+				defer cancel()
+				result := newCommentLoopChannel(ctx, apprv, client, time.Millisecond)
+				select {
+				case exit := <-result:
+					wantExit := 0
+					if decision == "Denied" {
+						wantExit = 1
+					}
+					if exit != wantExit {
+						t.Fatalf("got exit %d, want %d", exit, wantExit)
+					}
+				case <-ctx.Done():
+					t.Fatal("comment loop did not complete")
+				}
+				mu.Lock()
+				defer mu.Unlock()
+				wantPolls := 2
+				if allowReasons {
+					wantPolls = 1
+				}
+				if polls != wantPolls || closingComments != 1 || closes != 1 {
+					t.Fatalf("got polls/comments/closes %d/%d/%d; want %d/1/1", polls, closingComments, closes, wantPolls)
+				}
+			})
+		}
+	}
+}
 
 func TestApprovalFromComments(t *testing.T) {
 	login1 := "login1"
