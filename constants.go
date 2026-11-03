@@ -28,6 +28,7 @@ const (
 	envVarTargetRepo                         string = "INPUT_TARGET-REPOSITORY"
 	envVarPollingIntervalSeconds             string = "INPUT_POLLING-INTERVAL-SECONDS"
 	envVarCloseIssueMeansDenial              string = "INPUT_CLOSE-ISSUE-MEANS-DENIAL"
+	envVarAllowCommentReasons                string = "INPUT_ALLOW-COMMENT-REASONS"
 )
 
 var (
