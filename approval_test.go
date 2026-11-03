@@ -25,6 +25,7 @@ func TestApprovalFromComments(t *testing.T) {
 		approvers        []string
 		minimumApprovals int
 		expectedStatus   approvalStatus
+		expectedResponder string
 	}{
 		{
 			name: "single_approver_single_comment_approved",
@@ -36,6 +37,7 @@ func TestApprovalFromComments(t *testing.T) {
 			},
 			approvers:      []string{login1},
 			expectedStatus: approvalStatusApproved,
+			expectedResponder: login1,
 		},
 		{
 			name: "single_approver_single_comment_denied",
@@ -47,6 +49,7 @@ func TestApprovalFromComments(t *testing.T) {
 			},
 			approvers:      []string{login1},
 			expectedStatus: approvalStatusDenied,
+			expectedResponder: login1,
 		},
 		{
 			name: "single_approver_single_comment_pending",
@@ -58,6 +61,7 @@ func TestApprovalFromComments(t *testing.T) {
 			},
 			approvers:      []string{login1},
 			expectedStatus: approvalStatusPending,
+			expectedResponder: "",
 		},
 		{
 			name: "single_approver_multi_comment_approved",
@@ -73,6 +77,7 @@ func TestApprovalFromComments(t *testing.T) {
 			},
 			approvers:      []string{login1},
 			expectedStatus: approvalStatusApproved,
+			expectedResponder: login1,
 		},
 		{
 			name: "multi_approver_approved",
@@ -88,6 +93,7 @@ func TestApprovalFromComments(t *testing.T) {
 			},
 			approvers:      []string{login1, login2},
 			expectedStatus: approvalStatusApproved,
+			expectedResponder: login2,
 		},
 		{
 			name: "multi_approver_mixed",
@@ -103,6 +109,7 @@ func TestApprovalFromComments(t *testing.T) {
 			},
 			approvers:      []string{login1, login2},
 			expectedStatus: approvalStatusPending,
+			expectedResponder: "",
 		},
 		{
 			name: "multi_approver_denied",
@@ -118,6 +125,7 @@ func TestApprovalFromComments(t *testing.T) {
 			},
 			approvers:      []string{login1, login2},
 			expectedStatus: approvalStatusDenied,
+			expectedResponder: login1,
 		},
 		{
 			name: "multi_approver_minimum_one_approval",
@@ -134,6 +142,7 @@ func TestApprovalFromComments(t *testing.T) {
 			approvers:        []string{login1, login2},
 			expectedStatus:   approvalStatusApproved,
 			minimumApprovals: 1,
+			expectedResponder: login2,
 		},
 		{
 			name: "multi_approver_minimum_two_approvals",
@@ -150,6 +159,7 @@ func TestApprovalFromComments(t *testing.T) {
 			approvers:        []string{login1, login2, login3},
 			expectedStatus:   approvalStatusApproved,
 			minimumApprovals: 2,
+			expectedResponder: login2,
 		},
 		{
 			name: "multi_approver_approvals_less_than_minimum",
@@ -162,6 +172,7 @@ func TestApprovalFromComments(t *testing.T) {
 			approvers:        []string{login1, login2, login3},
 			expectedStatus:   approvalStatusPending,
 			minimumApprovals: 2,
+			expectedResponder: "",
 		},
 		{
 			name: "single_approver_single_comment_approved_case_insensitive",
@@ -173,18 +184,23 @@ func TestApprovalFromComments(t *testing.T) {
 			},
 			approvers:      []string{login1},
 			expectedStatus: approvalStatusApproved,
+			expectedResponder: login1u,
 		},
 	}
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			actual, err := approvalFromComments(testCase.comments, testCase.approvers, testCase.minimumApprovals)
+			actualStatus, actualResponder, err := approvalFromComments(testCase.comments, testCase.approvers, testCase.minimumApprovals)
 			if err != nil {
 				t.Fatalf("error getting approval from comments: %v", err)
 			}
 
-			if actual != testCase.expectedStatus {
-				t.Fatalf("actual %s, expected %s", actual, testCase.expectedStatus)
+			if actualStatus != testCase.expectedStatus {
+				t.Fatalf("actual %s, expected %s", actualStatus, testCase.expectedStatus)
+			}
+
+			if actualResponder != testCase.expectedResponder {
+				t.Fatalf("actual responder %s, expected %s", actualResponder, testCase.expectedResponder)
 			}
 		})
 	}

@@ -184,7 +184,7 @@ func (a *approvalEnvironment) SetActionOutputs(outputs map[string]string) (bool,
 	return true, nil
 }
 
-func approvalFromComments(comments []*github.IssueComment, approvers []string, minimumApprovals int) (approvalStatus, error) {
+func approvalFromComments(comments []*github.IssueComment, approvers []string, minimumApprovals int) (approvalStatus, string, error) {
 	remainingApprovers := make([]string, len(approvers))
 	copy(remainingApprovers, approvers)
 
@@ -202,11 +202,11 @@ func approvalFromComments(comments []*github.IssueComment, approvers []string, m
 		commentBody := comment.GetBody()
 		isApprovalComment, err := isApproved(commentBody)
 		if err != nil {
-			return approvalStatusPending, err
+			return approvalStatusPending, "", err
 		}
 		if isApprovalComment {
 			if len(remainingApprovers) == len(approvers)-minimumApprovals+1 {
-				return approvalStatusApproved, nil
+				return approvalStatusApproved, commentUser, nil
 			}
 			remainingApprovers[approverIdx] = remainingApprovers[len(remainingApprovers)-1]
 			remainingApprovers = remainingApprovers[:len(remainingApprovers)-1]
@@ -215,14 +215,14 @@ func approvalFromComments(comments []*github.IssueComment, approvers []string, m
 
 		isDenialComment, err := isDenied(commentBody)
 		if err != nil {
-			return approvalStatusPending, err
+			return approvalStatusPending, "", err
 		}
 		if isDenialComment {
-			return approvalStatusDenied, nil
+			return approvalStatusDenied, commentUser, nil
 		}
 	}
 
-	return approvalStatusPending, nil
+	return approvalStatusPending, "", nil
 }
 
 func approversIndex(approvers []string, name string) int {
