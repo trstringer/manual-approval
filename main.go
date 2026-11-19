@@ -48,28 +48,48 @@ func handleInterrupt(ctx context.Context, client *github.Client, apprv *approval
 	}
 }
 
-func newCommentLoopChannel(ctx context.Context, apprv *approvalEnvironment, client *github.Client, pollingInterval time.Duration) chan int {
-	channel := make(chan int)
+type commentLoopResult struct {
+	exitCode         int
+	approvingComment string
+}
+
+const maxApprovalCommentOutputBytes = 64 * 1024
+
+func approvalCommentOutput(body string) string {
+	if body == "" {
+		return ""
+	}
+	fmt.Printf("Approving comment: %q\n", body)
+	if len(body) > maxApprovalCommentOutputBytes {
+		fmt.Printf("Approving comment exceeds %d bytes. Leaving approval-comment output empty.\n", maxApprovalCommentOutputBytes)
+		return ""
+	}
+	return body
+}
+
+func newCommentLoopChannel(ctx context.Context, apprv *approvalEnvironment, pollingInterval time.Duration) chan commentLoopResult {
+	client := apprv.client
+	channel := make(chan commentLoopResult)
 	go func() {
-		loop_ctr := 0 
+		loop_ctr := 0
 		for {
-			comments, _, err := client.Issues.ListComments(ctx, apprv.targetRepoOwner, apprv.targetRepoName, apprv.approvalIssueNumber, &github.IssueListCommentsOptions{})
+			comments, err := apprv.listIssueComments(ctx)
 			if err != nil {
 				fmt.Printf("error getting comments: %v\n", err)
-				channel <- 1
+				channel <- commentLoopResult{exitCode: 1}
 				close(channel)
 				return
 			}
 
-			approved, err := approvalFromComments(comments, apprv.issueApprovers, apprv.minimumApprovals, apprv.allowCommentReasons)
+			status, approvingComment, err := approvalFromComments(comments, apprv.issueApprovers, apprv.minimumApprovals, apprv.allowCommentReasons, apprv.issueBodyCommentIDs)
 			if err != nil {
 				fmt.Printf("error getting approval from comments: %v\n", err)
-				channel <- 1
+				channel <- commentLoopResult{exitCode: 1}
 				close(channel)
 				return
 			}
-			fmt.Printf("Workflow status: %s\n", approved)
-			switch approved {
+			fmt.Printf("Workflow status: %s\n", status)
+			switch status {
 			case approvalStatusApproved:
 				newState := "closed"
 				closeComment := fmt.Sprintf("The required number of approvals (%d) has been met; continuing workflow and closing this issue.", apprv.minimumApprovals)
@@ -78,17 +98,17 @@ func newCommentLoopChannel(ctx context.Context, apprv *approvalEnvironment, clie
 				})
 				if err != nil {
 					fmt.Printf("error commenting on issue: %v\n", err)
-					channel <- 1
+					channel <- commentLoopResult{exitCode: 1}
 					close(channel)
 					return
 				}
 				if err = patchIssueState(ctx, client, apprv.targetRepoOwner, apprv.targetRepoName, apprv.approvalIssueNumber, newState); err != nil {
 					fmt.Printf("error closing issue: %v\n", err)
-					channel <- 1
+					channel <- commentLoopResult{exitCode: 1}
 					close(channel)
 					return
 				}
-				channel <- 0
+				channel <- commentLoopResult{approvingComment: approvingComment}
 				fmt.Println("Workflow manual approval completed")
 				close(channel)
 				return
@@ -107,17 +127,17 @@ func newCommentLoopChannel(ctx context.Context, apprv *approvalEnvironment, clie
 				})
 				if err != nil {
 					fmt.Printf("error commenting on issue: %v\n", err)
-					channel <- 1
+					channel <- commentLoopResult{exitCode: 1}
 					close(channel)
 					return
 				}
 				if err = patchIssueState(ctx, client, apprv.targetRepoOwner, apprv.targetRepoName, apprv.approvalIssueNumber, newState); err != nil {
 					fmt.Printf("error closing issue: %v\n", err)
-					channel <- 1
+					channel <- commentLoopResult{exitCode: 1}
 					close(channel)
 					return
 				}
-				channel <- 1
+				channel <- commentLoopResult{exitCode: 1}
 				close(channel)
 				return
 			case approvalStatusPending:
@@ -130,7 +150,7 @@ func newCommentLoopChannel(ctx context.Context, apprv *approvalEnvironment, clie
 						loop_ctr += 1
 						break
 					}
-					loop_ctr = 0 
+					loop_ctr = 0
 
 					issue, _, err := client.Issues.Get(
 
@@ -141,7 +161,7 @@ func newCommentLoopChannel(ctx context.Context, apprv *approvalEnvironment, clie
 					)
 					if err != nil {
 						fmt.Printf("error fetching issue state: %v\n", err)
-						channel <- 1
+						channel <- commentLoopResult{exitCode: 1}
 						close(channel)
 
 						return
@@ -170,7 +190,7 @@ func newCommentLoopChannel(ctx context.Context, apprv *approvalEnvironment, clie
 						if err != nil {
 							fmt.Printf("error commenting on closed issue: %v\n", err)
 						}
-						channel <- 1
+						channel <- commentLoopResult{exitCode: 1}
 						close(channel)
 						return
 					}
@@ -384,10 +404,11 @@ func main() {
 	killSignalChannel := make(chan os.Signal, 1)
 	signal.Notify(killSignalChannel, os.Interrupt)
 
-	commentLoopChannel := newCommentLoopChannel(ctx, apprv, client, pollingInterval)
+	commentLoopChannel := newCommentLoopChannel(ctx, apprv, pollingInterval)
 
 	select {
-	case exitCode := <-commentLoopChannel:
+	case result := <-commentLoopChannel:
+		exitCode := result.exitCode
 		approvalStatus := ""
 
 		if !failOnDenial && exitCode == 1 {
@@ -399,7 +420,8 @@ func main() {
 			approvalStatus = "approved"
 		}
 		outputs := map[string]string{
-			"approval-status": approvalStatus,
+			"approval-status":  approvalStatus,
+			"approval-comment": approvalCommentOutput(result.approvingComment),
 		}
 		if _, err := apprv.SetActionOutputs(outputs); err != nil {
 			fmt.Printf("error setting action output: %v\n", err)

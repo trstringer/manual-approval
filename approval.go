@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"crypto/rand"
 	"fmt"
 	"os"
 	"regexp"
@@ -18,6 +19,7 @@ type approvalEnvironment struct {
 	runID                 int
 	approvalIssue         *github.Issue
 	approvalIssueNumber   int
+	issueBodyCommentIDs   map[int64]struct{}
 	issueTitle            string
 	issueBody             string
 	issueLabels           []string
@@ -133,17 +135,38 @@ func (a *approvalEnvironment) createApprovalIssue(ctx context.Context) error {
 	}
 
 	bodyChunks := splitLongString(a.issueBody)
+	a.issueBodyCommentIDs = make(map[int64]struct{}, len(bodyChunks))
 	for _, chunk := range bodyChunks {
-		_, _, err = a.client.Issues.CreateComment(ctx, a.targetRepoOwner, a.targetRepoName, created.Number, &github.IssueComment{
+		comment, _, err := a.client.Issues.CreateComment(ctx, a.targetRepoOwner, a.targetRepoName, created.Number, &github.IssueComment{
 			Body: &chunk,
 		})
 		if err != nil {
 			return fmt.Errorf("failed to add comment chunk to issue: %w", err)
 		}
+		if comment.GetID() == 0 {
+			return fmt.Errorf("issue body comment was created without an ID")
+		}
+		a.issueBodyCommentIDs[comment.GetID()] = struct{}{}
 	}
 
 	fmt.Printf("Issue created: %s\n", a.approvalIssue.GetHTMLURL())
 	return nil
+}
+
+func (a *approvalEnvironment) listIssueComments(ctx context.Context) ([]*github.IssueComment, error) {
+	options := &github.IssueListCommentsOptions{ListOptions: github.ListOptions{PerPage: 100}}
+	var comments []*github.IssueComment
+	for {
+		page, response, err := a.client.Issues.ListComments(ctx, a.targetRepoOwner, a.targetRepoName, a.approvalIssueNumber, options)
+		if err != nil {
+			return nil, err
+		}
+		comments = append(comments, page...)
+		if response.NextPage == 0 {
+			return comments, nil
+		}
+		options.Page = response.NextPage
+	}
 }
 
 func (a *approvalEnvironment) SetActionOutputs(outputs map[string]string) (bool, error) {
@@ -164,7 +187,15 @@ func (a *approvalEnvironment) SetActionOutputs(outputs map[string]string) (bool,
 	var pairs []string
 
 	for key, value := range outputs {
-		pairs = append(pairs, fmt.Sprintf("%s=%s", key, value))
+		if !strings.Contains(value, "\n") {
+			pairs = append(pairs, fmt.Sprintf("%s=%s", key, value))
+			continue
+		}
+		delimiter := rand.Text()
+		for strings.Contains(value, delimiter) {
+			delimiter = rand.Text()
+		}
+		pairs = append(pairs, fmt.Sprintf("%s<<%s\n%s\n%s", key, delimiter, value, delimiter))
 	}
 
 	// Add a newline before writing the new outputs if the file is not empty. This prevents
@@ -186,7 +217,7 @@ func (a *approvalEnvironment) SetActionOutputs(outputs map[string]string) (bool,
 	return true, nil
 }
 
-func approvalFromComments(comments []*github.IssueComment, approvers []string, minimumApprovals int, allowCommentReasons bool) (approvalStatus, error) {
+func approvalFromComments(comments []*github.IssueComment, approvers []string, minimumApprovals int, allowCommentReasons bool, issueBodyCommentIDs map[int64]struct{}) (approvalStatus, string, error) {
 	remainingApprovers := make([]string, len(approvers))
 	copy(remainingApprovers, approvers)
 
@@ -195,6 +226,9 @@ func approvalFromComments(comments []*github.IssueComment, approvers []string, m
 	}
 
 	for _, comment := range comments {
+		if _, isIssueBodyComment := issueBodyCommentIDs[comment.GetID()]; isIssueBodyComment {
+			continue
+		}
 		commentUser := comment.User.GetLogin()
 		approverIdx := approversIndex(remainingApprovers, commentUser)
 		if approverIdx < 0 {
@@ -204,11 +238,11 @@ func approvalFromComments(comments []*github.IssueComment, approvers []string, m
 		commentBody := decisionText(comment.GetBody(), allowCommentReasons)
 		isApprovalComment, err := isApproved(commentBody)
 		if err != nil {
-			return approvalStatusPending, err
+			return approvalStatusPending, "", err
 		}
 		if isApprovalComment {
 			if len(remainingApprovers) == len(approvers)-minimumApprovals+1 {
-				return approvalStatusApproved, nil
+				return approvalStatusApproved, comment.GetBody(), nil
 			}
 			remainingApprovers[approverIdx] = remainingApprovers[len(remainingApprovers)-1]
 			remainingApprovers = remainingApprovers[:len(remainingApprovers)-1]
@@ -217,14 +251,14 @@ func approvalFromComments(comments []*github.IssueComment, approvers []string, m
 
 		isDenialComment, err := isDenied(commentBody)
 		if err != nil {
-			return approvalStatusPending, err
+			return approvalStatusPending, "", err
 		}
 		if isDenialComment {
-			return approvalStatusDenied, nil
+			return approvalStatusDenied, "", nil
 		}
 	}
 
-	return approvalStatusPending, nil
+	return approvalStatusPending, "", nil
 }
 
 // decisionText keeps the existing exact-comment behavior unless the optional

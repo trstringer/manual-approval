@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"testing"
@@ -48,7 +49,7 @@ func TestApprovalFromCommentsAllowCommentReasons(t *testing.T) {
 					if allowReasons {
 						expected = testCase.enabled
 					}
-					actual, err := approvalFromComments(testCase.comments, []string{"login1", "login2"}, testCase.minimum, allowReasons)
+					actual, _, err := approvalFromComments(testCase.comments, []string{"login1", "login2"}, testCase.minimum, allowReasons, nil)
 					if err != nil || actual != expected {
 						t.Fatalf("got status %s, error %v; want %s", actual, err, expected)
 					}
@@ -117,21 +118,26 @@ func TestCommentLoopAllowCommentReasons(t *testing.T) {
 				}
 				client.BaseURL = baseURL
 				apprv := &approvalEnvironment{
-					targetRepoOwner: "owner", targetRepoName: "repo", approvalIssueNumber: 1,
+					client: client, targetRepoOwner: "owner", targetRepoName: "repo", approvalIssueNumber: 1,
 					issueApprovers: []string{"login1"}, minimumApprovals: 1,
 					failOnDenial: true, allowCommentReasons: allowReasons,
 				}
 				ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 				defer cancel()
-				result := newCommentLoopChannel(ctx, apprv, client, time.Millisecond)
+				result := newCommentLoopChannel(ctx, apprv, time.Millisecond)
 				select {
-				case exit := <-result:
+				case result := <-result:
 					wantExit := 0
+					wantComment := ""
 					if decision == "Denied" {
 						wantExit = 1
+					} else if allowReasons {
+						wantComment = "Approved.\nThe deployment checks explain this decision."
+					} else {
+						wantComment = "Approved"
 					}
-					if exit != wantExit {
-						t.Fatalf("got exit %d, want %d", exit, wantExit)
+					if result.exitCode != wantExit || result.approvingComment != wantComment {
+						t.Fatalf("got exit %d and comment %q, want %d and %q", result.exitCode, result.approvingComment, wantExit, wantComment)
 					}
 				case <-ctx.Done():
 					t.Fatal("comment loop did not complete")
@@ -367,7 +373,7 @@ func TestApprovalFromComments(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			actual, err := approvalFromComments(testCase.comments, testCase.approvers, testCase.minimumApprovals, testCase.allowReasons)
+			actual, _, err := approvalFromComments(testCase.comments, testCase.approvers, testCase.minimumApprovals, testCase.allowReasons, nil)
 			if err != nil {
 				t.Fatalf("error getting approval from comments: %v", err)
 			}
@@ -643,7 +649,7 @@ func TestSaveOutput(t *testing.T) {
 		{
 			name:                "save_output_with_env",
 			approvalIssueNumber: 123,
-			env_github_output:   "./output.txt",
+			env_github_output:   filepath.Join(t.TempDir(), "output.txt"),
 			isSuccess:           true,
 		},
 		{
@@ -690,5 +696,119 @@ func TestSaveOutput(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestApprovalIssueBodyComments(t *testing.T) {
+	const path = "/repos/owner/repo/issues"
+	const body = "Approved.\nReview complete."
+	const generatedID, firstApproverID, secondApproverID = 101, 102, 103
+	comment := func(id int64, login, body string) *github.IssueComment {
+		return &github.IssueComment{
+			ID: github.Int64(id), User: &github.User{Login: github.String(login)}, Body: github.String(body),
+		}
+	}
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		var response any
+		switch {
+		case r.Method == http.MethodPost && r.URL.Path == path:
+			response = &github.Issue{Number: github.Int(1)}
+		case r.Method == http.MethodPost && r.URL.Path == path+"/1/comments":
+			var created github.IssueComment
+			if err := json.NewDecoder(r.Body).Decode(&created); err != nil || created.GetBody() != body {
+				t.Errorf("got issue body comment %q, error %v; want %q", created.GetBody(), err, body)
+			}
+			response = comment(generatedID, "login2", body)
+		case r.Method == http.MethodGet && r.URL.Path == path+"/1/comments":
+			if r.URL.Query().Get("page") == "2" {
+				response = []*github.IssueComment{comment(secondApproverID, "login2", body)}
+			} else {
+				w.Header().Set("Link", fmt.Sprintf("<http://%s%s/1/comments?per_page=100&page=2>; rel=\"next\"", r.Host, path))
+				response = []*github.IssueComment{
+					comment(generatedID, "login2", body),
+					comment(firstApproverID, "login1", "Approved.\nFirst review."),
+				}
+			}
+		default:
+			t.Errorf("unexpected request: %s %s", r.Method, r.URL.Path)
+			http.NotFound(w, r)
+			return
+		}
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			t.Errorf("encoding response: %v", err)
+		}
+	}))
+	defer server.Close()
+	client := github.NewClient(server.Client())
+	var err error
+	client.BaseURL, err = url.Parse(server.URL + "/")
+	if err != nil {
+		t.Fatal(err)
+	}
+	apprv := &approvalEnvironment{client: client, targetRepoOwner: "owner", targetRepoName: "repo", issueBody: body}
+	if err := apprv.createApprovalIssue(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	comments, err := apprv.listIssueComments(context.Background())
+	if err != nil || len(comments) != 3 {
+		t.Fatalf("got %d comments and error %v, want three comments across two pages", len(comments), err)
+	}
+
+	approvers := []string{"login1", "login2"}
+	status, approvingComment, err := approvalFromComments(comments[:2], approvers, 2, true, apprv.issueBodyCommentIDs)
+	if err != nil || status != approvalStatusPending || approvingComment != "" {
+		t.Fatalf("got status %s, comment %q, error %v; want Pending with one actual approval", status, approvingComment, err)
+	}
+	status, approvingComment, err = approvalFromComments(comments, approvers, 2, true, apprv.issueBodyCommentIDs)
+	if err != nil || status != approvalStatusApproved || approvingComment != body {
+		t.Fatalf("got status %s, comment %q, error %v; want Approved with %q", status, approvingComment, err, body)
+	}
+}
+
+func TestApprovalCommentOutput(t *testing.T) {
+	prefix := "Approved.\r\n"
+	exactLimit := prefix + strings.Repeat("é", (maxApprovalCommentOutputBytes-len(prefix))/2)
+	if len(exactLimit) < maxApprovalCommentOutputBytes {
+		exactLimit += "!"
+	}
+	if output := approvalCommentOutput(exactLimit); output != exactLimit {
+		t.Fatalf("comment at the limit gave %d output bytes, want %d", len(output), len(exactLimit))
+	}
+	if output := approvalCommentOutput(exactLimit + "é"); output != "" {
+		t.Fatalf("oversized comment gave %d output bytes, want zero", len(output))
+	}
+}
+
+func TestSaveMultilineOutput(t *testing.T) {
+	outputPath := filepath.Join(t.TempDir(), "github-output")
+	t.Setenv("GITHUB_OUTPUT", outputPath)
+	apprv := &approvalEnvironment{}
+	body := "Approved.\r\nReason = verified report.\n\n"
+	if _, err := apprv.SetActionOutputs(map[string]string{"issue-number": "123"}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := apprv.SetActionOutputs(map[string]string{"approval-comment": body}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := apprv.SetActionOutputs(map[string]string{"approval-status": "approved"}); err != nil {
+		t.Fatal(err)
+	}
+	content, err := os.ReadFile(outputPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	header := "issue-number=123\napproval-comment<<"
+	if !strings.HasPrefix(string(content), header) {
+		t.Fatalf("unexpected output header: %q", content)
+	}
+	delimiter, _, found := strings.Cut(strings.TrimPrefix(string(content), header), "\n")
+	if !found || delimiter == "" || strings.Contains(body, delimiter) {
+		t.Fatalf("invalid output delimiter %q", delimiter)
+	}
+	want := header + delimiter + "\n" + body + "\n" + delimiter + "\napproval-status=approved"
+	if string(content) != want {
+		t.Fatalf("got output file %q, want %q", content, want)
 	}
 }
