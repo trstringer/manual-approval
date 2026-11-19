@@ -59,8 +59,8 @@ inputs:
     default: "false"
   allow-comment-reasons:
     description: >
-      If true, treat an approval or denial keyword on the first line as the
-      decision and allow explanatory text on later lines.
+      If true, the first line must contain only the approval or denial keyword
+      with optional punctuation. An explanation can follow on later lines.
     required: false
     default: "false"
 outputs:
@@ -70,6 +70,8 @@ outputs:
     description: The URL of the issue created
   approval-status:
     description: The status of the approval ("approved" or "denied")
+  approval-comment:
+    description: The comment that met the approval threshold, or empty if unavailable or over 64 KiB
 runs:
   using: docker
   image: docker://ghcr.io/trstringer/manual-approval:1.13.0
